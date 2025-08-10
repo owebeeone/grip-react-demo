@@ -1,12 +1,15 @@
 // App.tsx (demo)
-import { useGrip, useChildContext } from '@owebeeone/grip-react';
+import { useGrip, useChildContext, Drip, useRuntime } from '@owebeeone/grip-react';
+import { useMemo } from 'react';
 import { incrementCount, decrementCount } from './bootstrap';
 import { PAGE_SIZE, DESCRIPTION, COUNT } from './grips';
 import { CURRENT_TAB } from './grips';
 import TimeClock from './TimeClock';
-import { CALC_DISPLAY, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX } from './grips';
+import { CALC_DISPLAY, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips';
 import { calc } from './bootstrap';
 import TabBar from './TabBar';
+import AppHeader from './AppHeader';
+import WeatherLocationSelect from './WeatherLocationSelect';
 
 export default function App() {
   const pageSize = useGrip(PAGE_SIZE);        // 50 (root override)
@@ -22,17 +25,31 @@ export default function App() {
 
   const calcDisplay = useGrip(CALC_DISPLAY);
   const tab = useGrip(CURRENT_TAB); // 'clock' | 'calc'
-  const temp = useGrip(WEATHER_TEMP_C) as number;
-  const humidity = useGrip(WEATHER_HUMIDITY) as number;
-  const wind = useGrip(WEATHER_WIND_SPEED) as number;
-  const dir = useGrip(WEATHER_WIND_DIR) as string;
-  const rain = useGrip(WEATHER_RAIN_PCT) as number;
-  const sunny = useGrip(WEATHER_SUNNY_PCT) as number;
-  const uv = useGrip(WEATHER_UV_INDEX) as number;
+  // default location grips unused in the new layout (kept comment for reference)
+  const { context: parentCtx } = useRuntime();
+  const locDrip1 = useMemo(() => new Drip<string>('Sydney'), []);
+  const locDrip2 = useMemo(() => new Drip<string>('San Jose'), []);
+  const locCtx1 = useMemo(() => parentCtx.createChild(undefined, [{ grip: WEATHER_LOCATION as any, drip: locDrip1 as any }]), [parentCtx, locDrip1]);
+  const locCtx2 = useMemo(() => parentCtx.createChild(undefined, [{ grip: WEATHER_LOCATION as any, drip: locDrip2 as any }]), [parentCtx, locDrip2]);
+  const temp1 = useGrip(WEATHER_TEMP_C, locCtx1) as number;
+  const humidity1 = useGrip(WEATHER_HUMIDITY, locCtx1) as number;
+  const wind1 = useGrip(WEATHER_WIND_SPEED, locCtx1) as number;
+  const dir1 = useGrip(WEATHER_WIND_DIR, locCtx1) as string;
+  const rain1 = useGrip(WEATHER_RAIN_PCT, locCtx1) as number;
+  const sunny1 = useGrip(WEATHER_SUNNY_PCT, locCtx1) as number;
+  const uv1 = useGrip(WEATHER_UV_INDEX, locCtx1) as number;
+
+  const temp2 = useGrip(WEATHER_TEMP_C, locCtx2) as number;
+  const humidity2 = useGrip(WEATHER_HUMIDITY, locCtx2) as number;
+  const wind2 = useGrip(WEATHER_WIND_SPEED, locCtx2) as number;
+  const dir2 = useGrip(WEATHER_WIND_DIR, locCtx2) as string;
+  const rain2 = useGrip(WEATHER_RAIN_PCT, locCtx2) as number;
+  const sunny2 = useGrip(WEATHER_SUNNY_PCT, locCtx2) as number;
+  const uv2 = useGrip(WEATHER_UV_INDEX, locCtx2) as number;
 
   return (
     <div style={{ padding: 16 }}>
-      <h3>grip-react demo</h3>
+      <AppHeader />
       <TabBar />
 
       {tab === 'clock' && (
@@ -70,14 +87,31 @@ export default function App() {
 
       {tab === 'weather' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(160px, 1fr))', gap: 8 }}>
-            <div>Temp (°C): {temp}</div>
-            <div>Humidity (%): {humidity}</div>
-            <div>Wind (kph): {wind}</div>
-            <div>Wind Dir: {dir}</div>
-            <div>Rain chance (%): {rain}</div>
-            <div>Sunny (%): {sunny}</div>
-            <div>UV Index: {uv}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+            <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12 }}>
+              <WeatherLocationSelect title="Column A" ctx={locCtx1} locationDrip={locDrip1} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', rowGap: 6, columnGap: 8 }}>
+                <div>Temp (°C)</div><div>{temp1}</div>
+                <div>Humidity (%)</div><div>{humidity1}</div>
+                <div>Wind (kph)</div><div>{wind1}</div>
+                <div>Wind Dir</div><div>{dir1}</div>
+                <div>Rain chance (%)</div><div>{rain1}</div>
+                <div>Sunny (%)</div><div>{sunny1}</div>
+                <div>UV Index</div><div>{uv1}</div>
+              </div>
+            </div>
+            <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12 }}>
+              <WeatherLocationSelect title="Column B" ctx={locCtx2} locationDrip={locDrip2} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', rowGap: 6, columnGap: 8 }}>
+                <div>Temp (°C)</div><div>{temp2}</div>
+                <div>Humidity (%)</div><div>{humidity2}</div>
+                <div>Wind (kph)</div><div>{wind2}</div>
+                <div>Wind Dir</div><div>{dir2}</div>
+                <div>Rain chance (%)</div><div>{rain2}</div>
+                <div>Sunny (%)</div><div>{sunny2}</div>
+                <div>UV Index</div><div>{uv2}</div>
+              </div>
+            </div>
           </div>
         </div>
       )}

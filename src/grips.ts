@@ -15,5 +15,6 @@ export const WEATHER_WIND_DIR = defineGrip<string>('Weather.WindDir', 'N');
 export const WEATHER_RAIN_PCT = defineGrip<number>('Weather.RainPct', 10);
 export const WEATHER_SUNNY_PCT = defineGrip<number>('Weather.SunnyPct', 70);
 export const WEATHER_UV_INDEX = defineGrip<number>('Weather.UV', 3);
+export const WEATHER_LOCATION = defineGrip<string>('Weather.Location', 'Default');
 
 
