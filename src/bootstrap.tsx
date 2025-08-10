@@ -14,6 +14,7 @@ const defineGrip = GripOf(registry);
 export const CURRENT_TIME = defineGrip<Date>('CurrentTime', new Date());
 export const PAGE_SIZE = defineGrip<number>('PageSize', 25);
 export const DESCRIPTION = defineGrip<string>('Description', '');
+export const COUNT = defineGrip<number>('Count', 0);
 
 // Engine + main context (demo keeps its own explicit main to avoid relying on engine defaults)
 const grok = new Grok();
@@ -30,11 +31,40 @@ const TickTap: Tap = {
   match: () => 1, // always available
   produce: (_grip, _ctx, _grok) => {
     const d = new Drip<Date>(new Date());
-    setInterval(() => d.next(new Date()), 1000);
+    let timer: any | undefined;
+    d.onFirstSubscriber(() => {
+      if (!timer) timer = setInterval(() => d.next(new Date()), 1000);
+    });
+    d.onZeroSubscribers(() => {
+      if (timer) { clearInterval(timer); timer = undefined; }
+    });
     return d as unknown as Drip<any>;
   },
 };
 grok.registerTap(TickTap);
+
+// Counter tap provides COUNT as a produced drip
+const CounterTap: Tap = {
+  id: 'counter',
+  provides: [COUNT],
+  match: () => 1,
+  produce: (grip) => {
+    const d = new Drip<number>((grip.defaultValue ?? 0) as number);
+    return d as unknown as Drip<any>;
+  },
+};
+grok.registerTap(CounterTap);
+
+// Demo helpers to mutate the COUNT drip in the main context
+export function incrementCount() {
+  const d = grok.query(COUNT, main);
+  d.next((d.get() as number) + 1);
+}
+
+export function decrementCount() {
+  const d = grok.query(COUNT, main);
+  d.next((d.get() as number) - 1);
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
