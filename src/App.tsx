@@ -5,7 +5,8 @@ import { PAGE_SIZE, DESCRIPTION, COUNT } from './grips';
 import { CURRENT_TAB } from './grips';
 import TimeClock from './TimeClock';
 import { CALC_DISPLAY } from './grips';
-import { setTab, calc } from './bootstrap';
+import { calc } from './bootstrap';
+import TabBar from './TabBar';
 
 export default function App() {
   const pageSize = useGrip(PAGE_SIZE);        // 50 (root override)
@@ -25,10 +26,7 @@ export default function App() {
   return (
     <div style={{ padding: 16 }}>
       <h3>grip-react demo</h3>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab('clock')} disabled={tab==='clock'}>Clock & Counter</button>
-        <button onClick={() => setTab('calc')} disabled={tab==='calc'}>Calculator</button>
-      </div>
+      <TabBar />
 
       {tab === 'clock' && (
         <div>
