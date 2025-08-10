@@ -4,7 +4,7 @@ import { incrementCount, decrementCount } from './bootstrap';
 import { PAGE_SIZE, DESCRIPTION, COUNT } from './grips';
 import { CURRENT_TAB } from './grips';
 import TimeClock from './TimeClock';
-import { CALC_DISPLAY } from './grips';
+import { CALC_DISPLAY, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX } from './grips';
 import { calc } from './bootstrap';
 import TabBar from './TabBar';
 
@@ -22,6 +22,13 @@ export default function App() {
 
   const calcDisplay = useGrip(CALC_DISPLAY);
   const tab = useGrip(CURRENT_TAB); // 'clock' | 'calc'
+  const temp = useGrip(WEATHER_TEMP_C) as number;
+  const humidity = useGrip(WEATHER_HUMIDITY) as number;
+  const wind = useGrip(WEATHER_WIND_SPEED) as number;
+  const dir = useGrip(WEATHER_WIND_DIR) as string;
+  const rain = useGrip(WEATHER_RAIN_PCT) as number;
+  const sunny = useGrip(WEATHER_SUNNY_PCT) as number;
+  const uv = useGrip(WEATHER_UV_INDEX) as number;
 
   return (
     <div style={{ padding: 16 }}>
@@ -57,6 +64,20 @@ export default function App() {
             <button onClick={() => calc.clear_pressed()}>C</button>
             <button onClick={() => calc.equals_pressed()}>=</button>
             <button onClick={() => calc.add_pressed()}>+</button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'weather' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(160px, 1fr))', gap: 8 }}>
+            <div>Temp (°C): {temp}</div>
+            <div>Humidity (%): {humidity}</div>
+            <div>Wind (kph): {wind}</div>
+            <div>Wind Dir: {dir}</div>
+            <div>Rain chance (%): {rain}</div>
+            <div>Sunny (%): {sunny}</div>
+            <div>UV Index: {uv}</div>
           </div>
         </div>
       )}

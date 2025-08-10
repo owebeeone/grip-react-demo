@@ -1,6 +1,6 @@
 import { Drip, type Tap } from '@owebeeone/grip-react';
 import { grok, main } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY } from './grips';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX } from './grips';
 
 // Time tick tap
 export const TickTap: Tap = {
@@ -126,7 +126,62 @@ export function registerAllTaps() {
   grok.registerTap(CounterTap);
   grok.registerTap(TabTap);
   grok.registerTap(CalculatorTap);
+  grok.registerTap(WeatherTap);
 }
+
+// Weather Tap (multi-output mock)
+export const WeatherTap: Tap = {
+  id: 'weather',
+  provides: [
+    WEATHER_TEMP_C,
+    WEATHER_HUMIDITY,
+    WEATHER_WIND_SPEED,
+    WEATHER_WIND_DIR,
+    WEATHER_RAIN_PCT,
+    WEATHER_SUNNY_PCT,
+    WEATHER_UV_INDEX,
+  ],
+  match: () => 1,
+  produce: (grip) => {
+    // Create (or cache) a set of drips shared for all weather outputs
+    // For simplicity, regenerate a new set each time (MVP). Could store in closure/singleton.
+    const temp = new Drip<number>((WEATHER_TEMP_C.defaultValue ?? 20) as number);
+    const humidity = new Drip<number>((WEATHER_HUMIDITY.defaultValue ?? 50) as number);
+    const wind = new Drip<number>((WEATHER_WIND_SPEED.defaultValue ?? 10) as number);
+    const dir = new Drip<string>((WEATHER_WIND_DIR.defaultValue ?? 'N') as string);
+    const rain = new Drip<number>((WEATHER_RAIN_PCT.defaultValue ?? 10) as number);
+    const sunny = new Drip<number>((WEATHER_SUNNY_PCT.defaultValue ?? 70) as number);
+    const uv = new Drip<number>((WEATHER_UV_INDEX.defaultValue ?? 3) as number);
+
+    // Simple mock updates
+    let tick = 0;
+    setInterval(() => {
+      tick += 1;
+      temp.next(((20 + (tick % 10)) as number));
+      humidity.next(((50 + (tick % 20)) as number));
+      wind.next(((10 + (tick % 5)) as number));
+      dir.next(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][tick % 8]);
+      rain.next(((tick * 7) % 100));
+      sunny.next((100 - ((tick * 7) % 100)));
+      uv.next(((tick % 11)));
+    }, 2000);
+
+    // Stop interval when no one subscribes to any single drip (basic hookup)
+    const stopIfIdle = () => { /* In a full impl, track subscribers across all; MVP omit. */ };
+    [temp, humidity, wind, dir, rain, sunny, uv].forEach(d => d.onZeroSubscribers(stopIfIdle));
+
+    // Return only the requested grip's drip
+    if (grip === WEATHER_TEMP_C) return temp as unknown as Drip<any>;
+    if (grip === WEATHER_HUMIDITY) return humidity as unknown as Drip<any>;
+    if (grip === WEATHER_WIND_SPEED) return wind as unknown as Drip<any>;
+    if (grip === WEATHER_WIND_DIR) return dir as unknown as Drip<any>;
+    if (grip === WEATHER_RAIN_PCT) return rain as unknown as Drip<any>;
+    if (grip === WEATHER_SUNNY_PCT) return sunny as unknown as Drip<any>;
+    if (grip === WEATHER_UV_INDEX) return uv as unknown as Drip<any>;
+    return new Drip<any>(undefined as any);
+  },
+};
+
 
 // Convenience helpers for UI
 export function incrementCount() {
