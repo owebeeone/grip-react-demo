@@ -7,7 +7,6 @@ import type { GripContext } from '@owebeeone/grip-react';
 export const TickTap: Tap = {
   id: 'tick',
   provides: [CURRENT_TIME],
-  match: () => 1,
   produce: () => {
     const d = new Drip<Date>(new Date());
     let timer: any | undefined;
@@ -25,7 +24,6 @@ export const TickTap: Tap = {
 export const CounterTap: Tap = {
   id: 'counter',
   provides: [COUNT],
-  match: () => 1,
   produce: (grip) => new Drip<number>((grip.defaultValue ?? 0) as number) as unknown as Drip<any>,
 };
 
@@ -33,7 +31,6 @@ export const CounterTap: Tap = {
 export const TabTap: Tap = {
   id: 'tab',
   provides: [CURRENT_TAB],
-  match: () => 1,
   produce: (grip) => new Drip<string>((grip.defaultValue ?? 'clock') as string) as unknown as Drip<any>,
 };
 
@@ -112,7 +109,6 @@ class Calculator {
 export const CalculatorTap: Tap = {
   id: 'calculator',
   provides: [CALC_DISPLAY],
-  match: () => 1,
   produce: (grip) => {
     const calc = new Calculator((grip.defaultValue ?? '0') as string);
     const drip = calc.getDrip() as unknown as Drip<any> & { __controller?: Calculator };
@@ -142,7 +138,6 @@ export const WeatherTap: Tap = {
     WEATHER_SUNNY_PCT,
     WEATHER_UV_INDEX,
   ],
-  match: () => 1,
   produce: (grip, ctx: GripContext, grok) => {
     // Read location from context lineage
     const ov = ctx.resolveOverride(WEATHER_LOCATION);
