@@ -1,4 +1,4 @@
-import { useGrip, useRuntime, createSimpleValueTap, type Tap, SimpleValueTap } from '@owebeeone/grip-react';
+import { useGrip, useRuntime, createSimpleValueTap, SimpleValueTap } from '@owebeeone/grip-react';
 import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP } from './grips';
 import WeatherLocationSelect from './WeatherLocationSelect';
 import { useMemo } from 'react';

@@ -8,37 +8,30 @@ class TimeTap extends BaseTap implements Tap {
   constructor() { super({ provides: [CURRENT_TIME] }); }
   private start() {
     if (this.timer) return;
-    console.log('[TimeTap] start');
     const tick = () => {
       const updates = new Map([[CURRENT_TIME as any, new Date()]]);
-      console.log('[TimeTap] tick publish to', this.producer?.getDestinations().size ?? 0, 'destinations');
       this.publish(updates);
     };
     tick();
     this.timer = setInterval(tick, 1000);
   }
   private stop() {
-    console.log('[TimeTap] stop');
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
   }
   onAttach(home: any): void {
     super.onAttach(home);
     // Do not start here; wait for first destination connect
-    console.log('[TimeTap] onAttach at', home?.id);
   }
   onDetach(): void {
-    console.log('[TimeTap] onDetach');
     this.stop();
     super.onDetach();
   }
   onConnect(dest: any, grip: any): void {
     super.onConnect(dest, grip);
-    console.log('[TimeTap] onConnect dest', dest?.id, 'grip', (grip as any)?.key, 'destCount ->', this.producer?.getDestinations().size ?? 0);
     this.start();
   }
   onDisconnect(dest: any, grip: any): void {
     super.onDisconnect(dest, grip);
-    console.log('[TimeTap] onDisconnect dest', dest?.id, 'grip', (grip as any)?.key, 'destCount ->', this.producer?.getDestinations().size ?? 0);
     const hasAny = (this.producer?.getDestinations().size ?? 0) > 0;
     if (!hasAny) this.stop();
   }
