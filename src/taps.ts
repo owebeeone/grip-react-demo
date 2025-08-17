@@ -65,14 +65,22 @@ class WeatherTapImpl extends BaseTap implements Tap {
   onAttach(home: any): void {
     super.onAttach(home);
     const tick = () => {
-      console.log('[WeatherTap] tick');
-      const dests = Array.from(this.producer?.getDestinations().keys() ?? []);
-      for (const destNode of dests) {
+      const now = Date.now();
+      const destNodes = Array.from(this.producer?.getDestinations().keys() ?? []);
+      const groups = new Map<string, any[]>();
+      for (const destNode of destNodes) {
         const dest = destNode.get_context();
         if (!dest) continue;
-        const loc = dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? (WEATHER_LOCATION.defaultValue ?? 'Default');
-        const now = Date.now();
-        const lower = String(loc).toLowerCase();
+        const loc = this.getDestParamValue(dest, WEATHER_LOCATION) ?? (WEATHER_LOCATION.defaultValue ?? 'Default');
+        const key = String(loc);
+        let arr = groups.get(key);
+        if (!arr) { arr = []; groups.set(key, arr); }
+        arr.push(dest);
+      }
+
+      const computeFor = (loc: string) => {
+        const lower = loc.toLowerCase();
+        console.log('[WeatherTap] tick', loc);
         let offset = 0;
         for (let i = 0; i < lower.length; i++) offset = (offset + lower.charCodeAt(i)) % 10;
         const t = (Math.floor(now / 2000) + offset) % 10;
@@ -83,7 +91,7 @@ class WeatherTapImpl extends BaseTap implements Tap {
         const rain = ((t * 7 + offset * 3) % 100);
         const sunny = 100 - rain;
         const uv = (t + offset) % 11;
-        const updates = new Map<Grip<any>, any>([
+        return new Map<Grip<any>, any>([
           [WEATHER_TEMP_C as any, temp],
           [WEATHER_HUMIDITY as any, humidity],
           [WEATHER_WIND_SPEED as any, wind],
@@ -92,7 +100,11 @@ class WeatherTapImpl extends BaseTap implements Tap {
           [WEATHER_SUNNY_PCT as any, sunny],
           [WEATHER_UV_INDEX as any, uv],
         ]);
-        this.publish(updates, dest);
+      };
+
+      for (const [loc, dests] of groups) {
+        const updates = computeFor(loc);
+        for (const dest of dests) this.publish(updates, dest);
       }
     };
     tick();
