@@ -16,10 +16,18 @@ main.setValue(PAGE_SIZE, 50);
 // Demo exports
 export { incrementCount, decrementCount, setTab, calc } from './taps';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <GripProvider grok={grok} context={main}>
-      <App />
-    </GripProvider>
-  </React.StrictMode>
+// Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
+// Persistent option (recommended): create grip-react-demo/.env.development with:
+// VITE_STRICT_MODE=true
+// or
+// VITE_STRICT_MODE=false
+const USE_STRICT_MODE = (import.meta as any).env?.VITE_STRICT_MODE === 'true';
+
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+const app = (
+  <GripProvider grok={grok} context={main}>
+    <App />
+  </GripProvider>
 );
+
+root.render(USE_STRICT_MODE ? <React.StrictMode>{app}</React.StrictMode> : app);
