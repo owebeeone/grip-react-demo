@@ -1,4 +1,4 @@
-import { GripRegistry, GripOf, Grok, GripContext } from '@owebeeone/grip-react';
+import { GripRegistry, GripOf, Grok } from '@owebeeone/grip-react';
 
 export const registry = new GripRegistry();
 export const defineGrip = GripOf(registry);

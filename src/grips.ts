@@ -1,3 +1,4 @@
+import type { SimpleValueTap } from '@owebeeone/grip-react';
 import { defineGrip } from './runtime';
 
 export const CURRENT_TIME = defineGrip<Date>('CurrentTime', new Date());
@@ -16,5 +17,6 @@ export const WEATHER_RAIN_PCT = defineGrip<number>('Weather.RainPct', 10);
 export const WEATHER_SUNNY_PCT = defineGrip<number>('Weather.SunnyPct', 70);
 export const WEATHER_UV_INDEX = defineGrip<number>('Weather.UV', 3);
 export const WEATHER_LOCATION = defineGrip<string>('Weather.Location', 'Default');
+export const WEATHER_LOCATION_TAP = defineGrip<SimpleValueTap<string>>('Weather.LocationTap', undefined);
 
 

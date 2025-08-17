@@ -1,12 +1,20 @@
-import { Drip, useGrip, useRuntime } from '@owebeeone/grip-react';
-import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX } from './grips';
+import { useGrip, useRuntime, createSimpleValueTap, type Tap, SimpleValueTap } from '@owebeeone/grip-react';
+import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP } from './grips';
 import WeatherLocationSelect from './WeatherLocationSelect';
 import { useMemo } from 'react';
 
 export default function WeatherColumn(props: { title: string; initialLocation: string }) {
   const { context: parentCtx } = useRuntime();
-  const locationDrip = useMemo(() => new Drip<string>(props.initialLocation), [props.initialLocation]);
-  const ctx = useMemo(() => parentCtx.createChild(undefined, [{ grip: WEATHER_LOCATION as any, drip: locationDrip as any }]), [parentCtx, locationDrip]);
+  const ctx = useMemo(() => parentCtx.createChild(), [parentCtx]);
+  // Provide a location value via a simple tap in the child context
+  const locationTap: SimpleValueTap<string> = useMemo(
+    () => createSimpleValueTap(
+      WEATHER_LOCATION, 
+      { initial: props.initialLocation,
+        handleGrip: WEATHER_LOCATION_TAP }) as unknown as SimpleValueTap<string>,
+    [props.initialLocation]
+  );
+  useMemo(() => { ctx.registerTap(locationTap); return () => ctx.unregisterTap(locationTap); }, [ctx, locationTap]);
 
   const temp = useGrip(WEATHER_TEMP_C, ctx);
   const humidity = useGrip(WEATHER_HUMIDITY, ctx);
@@ -18,7 +26,7 @@ export default function WeatherColumn(props: { title: string; initialLocation: s
 
   return (
     <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12 }}>
-      <WeatherLocationSelect title={props.title} ctx={ctx} locationDrip={locationDrip} />
+      <WeatherLocationSelect title={props.title} ctx={ctx} />
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', rowGap: 6, columnGap: 8 }}>
         <div>Temp (°C)</div><div>{temp}</div>
         <div>Humidity (%)</div><div>{humidity}</div>
