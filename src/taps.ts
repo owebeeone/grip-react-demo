@@ -65,6 +65,7 @@ class WeatherTapImpl extends BaseTap implements Tap {
   onAttach(home: any): void {
     super.onAttach(home);
     const tick = () => {
+      console.log('[WeatherTap] tick');
       const dests = Array.from(this.producer?.getDestinations().keys() ?? []);
       for (const destNode of dests) {
         const dest = destNode.get_context();
