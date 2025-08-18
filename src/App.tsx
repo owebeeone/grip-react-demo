@@ -1,5 +1,5 @@
 // App.tsx (demo)
-import { useGrip, useChildContext, GripGraphVisualizer, useRuntime } from '@owebeeone/grip-react';
+import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton } from '@owebeeone/grip-react';
 import { incrementCount, decrementCount } from './bootstrap';
 import { PAGE_SIZE, DESCRIPTION, COUNT } from './grips';
 import { CURRENT_TAB } from './grips';
@@ -9,126 +9,35 @@ import { calc } from './bootstrap';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {
   const { grok } = useRuntime();
   const [open, setOpen] = useState(false);
-  const [splitPosition, setSplitPosition] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const draggingRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    draggingRef.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, []);
-  
-  const handleToggleOpen = useCallback(() => {
-    setOpen(o => {
-        const willBeOpen = !o;
-        if (willBeOpen && containerRef.current) {
-            // If opening, and position is not set, calculate initial split
-            if (splitPosition === null) {
-                const containerWidth = containerRef.current.clientWidth;
-                const minLeft = 240;
-                const minRight = 300;
-                const splitterWidth = 6;
-                
-                let initialPos = containerWidth / 2;
-                
-                // Ensure initial position respects min widths
-                if (initialPos < minLeft) {
-                    initialPos = minLeft;
-                }
-                if (containerWidth - initialPos - splitterWidth < minRight) {
-                    initialPos = containerWidth - minRight - splitterWidth;
-                }
-                setSplitPosition(initialPos);
-            }
-        }
-        return willBeOpen;
-    });
-  }, [splitPosition]);
-
-  useEffect(() => {
-    function handleMove(e: MouseEvent) {
-      if (!draggingRef.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      // Clamp between min sizes for both panes
-      const minLeft = 240;
-      const minRight = 300;
-      const maxX = rect.width - minRight;
-      const newX = Math.max(minLeft, Math.min(maxX, x));
-      setSplitPosition(newX);
-    }
-    
-    function handleUp() {
-      if (draggingRef.current) {
-        draggingRef.current = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      }
-    }
-    
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-    };
-  }, []);
-
-  // Use a sensible default for leftWidth if it hasn't been calculated yet
-  const leftWidth = splitPosition ?? (containerRef.current?.clientWidth ?? 0) / 2;
+  const mainPanel = (
+    <div style={{ height: '100%', overflow: 'auto' }}>
+      {props.children}
+    </div>
+  );
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div ref={containerRef} style={{ flex: '1 1 auto', display: 'flex', minHeight: 0 }}>
+      <div style={{ flex: '1 1 auto', display: 'flex', minHeight: 0, minWidth: 0 }}>
         {!open ? (
-          // Single pane mode - app takes full width
-          <div style={{ flex: '1 1 auto', overflow: 'auto' }}>{props.children}</div>
+          mainPanel
         ) : (
-          // Split pane mode
-          <>
-            <div style={{ 
-              flex: 'none', // Left pane has fixed width
-              width: `${leftWidth}px`,
-              minWidth: 240,
-              overflow: 'auto' 
-            }}>
-              {props.children}
-            </div>
-            <div 
-              style={{ 
-                width: 6, 
-                cursor: 'col-resize', 
-                background: '#e0e0e0',
-                flexShrink: 0,
-                position: 'relative'
-              }} 
-              onMouseDown={onMouseDown}
-            >
-              <div style={{
-                position: 'absolute',
-                inset: '-2px',
-                zIndex: 1000
-              }} />
-            </div>
-            <div style={{ 
-              flex: '1 1 auto', // Right pane takes remaining space
-              minWidth: 300,
-              borderLeft: '1px solid #ddd', 
-              background: '#fff', 
-              display: 'flex'
-            }}>
+          <PanelGroup direction="horizontal" style={{ height: '100%', width: '100%' }}>
+            <Panel defaultSize={50} minSize={30}>
+              {mainPanel}
+            </Panel>
+            <PanelResizeHandle style={{ width: '6px', background: '#e0e0e0' }} />
+            <Panel defaultSize={50} minSize={25}>
               <GripGraphVisualizer grok={grok} refreshMs={700} refreshTrigger={refreshTrigger} />
-            </div>
-          </>
+            </Panel>
+          </PanelGroup>
         )}
       </div>
       <div style={{
@@ -144,8 +53,9 @@ function ResizableGraphWrapper(props: { children: React.ReactNode }) {
         gap: 8,
         zIndex: 2000
       }}>
-        <button onClick={handleToggleOpen}>{open ? 'Hide Graph' : 'Show Graph'}</button>
+        <button onClick={() => setOpen(o => !o)}>{open ? 'Hide Graph' : 'Show Graph'}</button>
         {open && <button onClick={() => setRefreshTrigger(c => c + 1)}>Refresh Graph</button>}
+        <GraphDumpButton grok={grok} />
       </div>
     </div>
   );
