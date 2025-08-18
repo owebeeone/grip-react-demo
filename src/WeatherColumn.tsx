@@ -13,9 +13,6 @@ export default function WeatherColumn(props: { title: string; initialLocation: s
 		tapGrip: WEATHER_LOCATION_TAP,
 	});
 
-    // Live OpenMeteo taps are registered globally (at main). This column only registers
-    // the location value tap in its local child context.
-
 	const temp = useGrip(WEATHER_TEMP_C, ctx);
 	const humidity = useGrip(WEATHER_HUMIDITY, ctx);
 	const wind = useGrip(WEATHER_WIND_SPEED, ctx);
