@@ -2,6 +2,7 @@ import { type Tap, createSimpleValueTap, BaseTap, Grip } from '@owebeeone/grip-r
 import { grok, main } from './runtime';
 import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
+import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
 
 // Time tick: publish current time every second
 class TimeTap extends BaseTap implements Tap {
@@ -127,7 +128,11 @@ export function registerAllTaps() {
   grok.registerTap(CounterTap);
   grok.registerTap(TabTap);
   grok.registerTap(CalcDisplayTap);
-  grok.registerTap(WeatherTap);
+  // Register live OpenMeteo taps at main so any context can resolve live data
+  grok.registerTap(createLocationToGeoTap());
+  grok.registerTap(createOpenMeteoWeatherTap());
+  // Keep simulated tap as a fallback at the root (lower proximity than main)
+  grok.registerTapAt(grok.rootContext, WeatherTap);
 }
 
 // Convenience helpers for UI

@@ -2,8 +2,6 @@ import { useGrip, useRuntime, useSimpleValueTap } from '@owebeeone/grip-react';
 import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
 import { useMemo } from 'react';
-import { useTap } from '@owebeeone/grip-react';
-import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
 
 export default function WeatherColumn(props: { title: string; initialLocation: string }) {
 	const { context: parentCtx } = useRuntime();
@@ -15,9 +13,8 @@ export default function WeatherColumn(props: { title: string; initialLocation: s
 		tapGrip: WEATHER_LOCATION_TAP,
 	});
 
-	// Register OpenMeteo taps in this child context (geocode -> weather)
-	useTap(() => createLocationToGeoTap(), { ctx, deps: [ctx] });
-	useTap(() => createOpenMeteoWeatherTap(), { ctx, deps: [ctx] });
+    // Live OpenMeteo taps are registered globally (at main). This column only registers
+    // the location value tap in its local child context.
 
 	const temp = useGrip(WEATHER_TEMP_C, ctx);
 	const humidity = useGrip(WEATHER_HUMIDITY, ctx);
