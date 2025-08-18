@@ -9,7 +9,7 @@ import { calc } from './bootstrap';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {

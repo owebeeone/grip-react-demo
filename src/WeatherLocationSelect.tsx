@@ -1,6 +1,6 @@
 import { useSelectGrip } from '@owebeeone/grip-react';
 import type { GripContext } from '@owebeeone/grip-react';
-import { WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips';
+import { WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips.weather';
 
 const OPTIONS = ['Sydney', 'Melbourne', 'San Jose', 'Palo Alto', 'Paris'] as const;
 

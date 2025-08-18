@@ -1,6 +1,6 @@
 import { useGrip, useRuntime, createSimpleValueTap, type Tap } from '@owebeeone/grip-react';
 import { useEffect, useMemo } from 'react';
-import { WEATHER_LOCATION, WEATHER_TEMP_C } from './grips';
+import { WEATHER_LOCATION, WEATHER_TEMP_C } from './grips.weather';
 
 export default function AppHeader() {
   const { context: parentCtx } = useRuntime();
