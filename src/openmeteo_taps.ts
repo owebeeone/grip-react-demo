@@ -1,0 +1,147 @@
+import { type Tap, createAsyncMultiTap } from '@owebeeone/grip-react';
+import type { Grip } from '@owebeeone/grip-react';
+import { GEO_LAT, GEO_LNG, GEO_LABEL, WEATHER_HUMIDITY, WEATHER_LOCATION, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_TEMP_C, WEATHER_UV_INDEX, WEATHER_WIND_DIR, WEATHER_WIND_SPEED } from './grips.weather';
+import type { GripContext } from '@owebeeone/grip-react';
+
+function toCompass(deg: number | undefined): string {
+  if (deg == null || !Number.isFinite(deg)) return '';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const ix = Math.round(((deg % 360) / 22.5)) % 16;
+  return dirs[ix];
+}
+
+function nearestHourIndex(hourlyTimes: string[], currentIso: string): number {
+  const idxEqual = hourlyTimes.indexOf(currentIso);
+  if (idxEqual >= 0) return idxEqual;
+  const currentMs = Date.parse(currentIso);
+  let best = 0;
+  let bestDelta = Infinity;
+  for (let i = 0; i < hourlyTimes.length; i++) {
+    const d = Math.abs(Date.parse(hourlyTimes[i]) - currentMs);
+    if (d < bestDelta) { best = i; bestDelta = d; }
+  }
+  return best;
+}
+
+export function createLocationToGeoTap(): Tap {
+  type Outs = { Lat: typeof GEO_LAT; Lng: typeof GEO_LNG; Label: typeof GEO_LABEL };
+  return createAsyncMultiTap<Outs, { lat?: number; lng?: number; label?: string }>({
+    provides: [GEO_LAT, GEO_LNG, GEO_LABEL],
+    destinationParamGrips: [WEATHER_LOCATION],
+    cacheTtlMs: 30 * 60 * 1000,
+    deadlineMs: 5000,
+    requestKeyOf: (dest: GripContext) => (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim().toLowerCase() || undefined,
+    fetcher: async (dest, signal) => {
+      const q = (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim();
+      if (!q) return { lat: undefined, lng: undefined, label: '' };
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
+      const res = await fetch(url, { signal });
+      if (!res.ok) return { lat: undefined, lng: undefined, label: '' };
+      const data: any = await res.json();
+      const r = data?.results?.[0];
+      if (!r) return { lat: undefined, lng: undefined, label: '' };
+      return { lat: r.latitude as number, lng: r.longitude as number, label: String(r.name ?? q) };
+    },
+    mapResult: (_dest, r) => new Map<Grip<any>, any>([
+      [GEO_LAT as unknown as Grip<any>, r.lat],
+      [GEO_LNG as unknown as Grip<any>, r.lng],
+      [GEO_LABEL as unknown as Grip<any>, r.label ?? ''],
+    ])
+  });
+}
+
+export function createOpenMeteoWeatherTap(): Tap {
+  type Outs = {
+    T: typeof WEATHER_TEMP_C;
+    H: typeof WEATHER_HUMIDITY;
+    WS: typeof WEATHER_WIND_SPEED;
+    WD: typeof WEATHER_WIND_DIR;
+    RP: typeof WEATHER_RAIN_PCT;
+    SP: typeof WEATHER_SUNNY_PCT;
+    UV: typeof WEATHER_UV_INDEX;
+  };
+  const tap = createAsyncMultiTap<Outs, any>({
+    provides: [
+      WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR,
+      WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX
+    ],
+    destinationParamGrips: [GEO_LAT, GEO_LNG],
+    cacheTtlMs: 10 * 60 * 1000,
+    deadlineMs: 7000,
+    requestKeyOf: (dest) => {
+      const lat = dest.getOrCreateConsumer(GEO_LAT).get();
+      const lng = dest.getOrCreateConsumer(GEO_LNG).get();
+      if (lat == null || lng == null) return undefined;
+      const rl = Math.round((lat as number) * 10000) / 10000;
+      const rg = Math.round((lng as number) * 10000) / 10000;
+      return `${rl}:${rg}`;
+    },
+    fetcher: async (dest, signal) => {
+      const lat = dest.getOrCreateConsumer(GEO_LAT).get();
+      const lng = dest.getOrCreateConsumer(GEO_LNG).get();
+      if (lat == null || lng == null) return null;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&hourly=relativehumidity_2m,precipitation_probability,cloudcover,uv_index,winddirection_10m,windspeed_10m`;
+      const res = await fetch(url, { signal });
+      if (!res.ok) return null;
+      return await res.json();
+    },
+    mapResult: (_dest, data) => {
+      if (!data) {
+        return new Map<Grip<any>, any>([
+          [WEATHER_TEMP_C as any, undefined],
+          [WEATHER_HUMIDITY as any, undefined],
+          [WEATHER_WIND_SPEED as any, undefined],
+          [WEATHER_WIND_DIR as any, ''],
+          [WEATHER_RAIN_PCT as any, undefined],
+          [WEATHER_SUNNY_PCT as any, undefined],
+          [WEATHER_UV_INDEX as any, undefined],
+        ]);
+      }
+      const cw = data.current_weather ?? {};
+      const hourly = data.hourly ?? {};
+      const times: string[] = hourly.time ?? [];
+      const idx = cw.time && Array.isArray(times) && times.length ? nearestHourIndex(times, cw.time) : 0;
+      const temp = cw.temperature as number | undefined;
+      const windspeed = (cw.windspeed as number | undefined);
+      const winddirDeg = (cw.winddirection as number | undefined);
+      const humidityArr: number[] = hourly.relativehumidity_2m ?? [];
+      const rainArr: number[] = hourly.precipitation_probability ?? [];
+      const cloudArr: number[] = hourly.cloudcover ?? [];
+      const uvArr: number[] = hourly.uv_index ?? [];
+      const humidity = humidityArr[idx] ?? undefined;
+      const rain = rainArr[idx] ?? undefined;
+      const cloud = cloudArr[idx] ?? undefined;
+      const sunny = cloud != null ? Math.max(0, 100 - cloud) : undefined;
+      const uv = uvArr[idx] ?? undefined;
+      return new Map<Grip<any>, any>([
+        [WEATHER_TEMP_C as any, temp],
+        [WEATHER_HUMIDITY as any, humidity],
+        [WEATHER_WIND_SPEED as any, windspeed],
+        [WEATHER_WIND_DIR as any, toCompass(winddirDeg)],
+        [WEATHER_RAIN_PCT as any, rain],
+        [WEATHER_SUNNY_PCT as any, sunny],
+        [WEATHER_UV_INDEX as any, uv],
+      ]);
+    }
+  });
+  // Add a 10-minute refresh interval by calling produce({ forceRefetch: true })
+  const t = tap as any;
+  const origOnAttach = t.onAttach?.bind(t);
+  const origOnDetach = t.onDetach?.bind(t);
+  let timer: any | null = null;
+  t.onAttach = (home: any) => {
+    origOnAttach?.(home);
+    if (!timer) {
+      timer = setInterval(() => {
+        try { t.produce({ forceRefetch: true }); } catch {}
+      }, 10 * 60 * 1000);
+    }
+  };
+  t.onDetach = () => {
+    if (timer) { clearInterval(timer); timer = null; }
+    origOnDetach?.();
+  };
+  return tap;
+}
+
+
