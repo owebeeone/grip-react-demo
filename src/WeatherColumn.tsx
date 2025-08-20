@@ -1,4 +1,4 @@
-import { useGrip, useRuntime, useSimpleValueTap } from '@owebeeone/grip-react';
+import { useGrip, useRuntime, useAtomValueTap } from '@owebeeone/grip-react';
 import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
 import { useMemo } from 'react';
@@ -7,7 +7,7 @@ export default function WeatherColumn(props: { title: string; initialLocation: s
 	const { context: parentCtx } = useRuntime();
 	const ctx = useMemo(() => parentCtx.createChild(), [parentCtx]);
 
-	useSimpleValueTap(WEATHER_LOCATION, {
+	useAtomValueTap(WEATHER_LOCATION, {
 		ctx,
 		initial: props.initialLocation,
 		tapGrip: WEATHER_LOCATION_TAP,

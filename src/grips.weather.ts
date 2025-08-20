@@ -1,4 +1,4 @@
-import type { SimpleValueTap } from '@owebeeone/grip-react';
+import type { AtomValueTap } from '@owebeeone/grip-react';
 import { defineGrip } from './runtime';
 
 // Generic weather grips
@@ -12,7 +12,7 @@ export const WEATHER_UV_INDEX = defineGrip<number | undefined>('Weather.UV', und
 
 // Location input and its handle: unset by default so geocoding waits for a real selection
 export const WEATHER_LOCATION = defineGrip<string | undefined>('Weather.Location', undefined);
-export const WEATHER_LOCATION_TAP = defineGrip<SimpleValueTap<string | undefined>>('Weather.LocationTap', undefined);
+export const WEATHER_LOCATION_TAP = defineGrip<AtomValueTap<string | undefined>>('Weather.LocationTap', undefined);
 
 // Geocoding outputs
 export const GEO_LAT = defineGrip<number | undefined>('Geo.Lat', undefined);

@@ -1,4 +1,4 @@
-import { useGrip, useRuntime, createSimpleValueTap, type Tap } from '@owebeeone/grip-react';
+import { useGrip, useRuntime, createAtomValueTap, type Tap } from '@owebeeone/grip-react';
 import { useEffect, useMemo } from 'react';
 import { WEATHER_LOCATION, WEATHER_TEMP_C } from './grips.weather';
 
@@ -7,7 +7,7 @@ export default function AppHeader() {
   const ctx = useMemo(() => parentCtx.createChild(), [parentCtx]);
   // Provide WEATHER_LOCATION via a simple tap in the child context
   useEffect(() => {
-    const tap = createSimpleValueTap(WEATHER_LOCATION, { initial: 'Sydney' }) as unknown as Tap;
+    const tap = createAtomValueTap(WEATHER_LOCATION, { initial: 'Sydney' }) as unknown as Tap;
     ctx.registerTap(tap);
     return () => ctx.unregisterTap(tap);
   }, [ctx]);

@@ -1,4 +1,4 @@
-import { type Tap, createSimpleValueTap, BaseTap, Grip } from '@owebeeone/grip-react';
+import { type Tap, createAtomValueTap, BaseTap, Grip } from '@owebeeone/grip-react';
 import { grok, main } from './runtime';
 import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
@@ -44,11 +44,11 @@ class TimeTap extends BaseTap implements Tap {
 export const TickTap: Tap = new TimeTap() as unknown as Tap;
 
 // Counter & Tab taps via simple taps
-export const CounterTap: Tap = createSimpleValueTap(COUNT, { initial: COUNT.defaultValue ?? 0 }) as unknown as Tap;
-export const TabTap: Tap = createSimpleValueTap(CURRENT_TAB, { initial: CURRENT_TAB.defaultValue ?? 'clock' }) as unknown as Tap;
+export const CounterTap: Tap = createAtomValueTap(COUNT, { initial: COUNT.defaultValue ?? 0 }) as unknown as Tap;
+export const TabTap: Tap = createAtomValueTap(CURRENT_TAB, { initial: CURRENT_TAB.defaultValue ?? 'clock' }) as unknown as Tap;
 
 // Calculator: store display in a simple drip; UI helpers mutate the value directly
-export const CalcDisplayTap: Tap = createSimpleValueTap(CALC_DISPLAY, { initial: CALC_DISPLAY.defaultValue ?? '0' }) as unknown as Tap;
+export const CalcDisplayTap: Tap = createAtomValueTap(CALC_DISPLAY, { initial: CALC_DISPLAY.defaultValue ?? '0' }) as unknown as Tap;
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
 class WeatherTapImpl extends BaseTap implements Tap {
