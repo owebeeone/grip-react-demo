@@ -1,6 +1,6 @@
 import { type Tap, createAtomValueTap, BaseTap, Grip } from '@owebeeone/grip-react';
 import { grok, main } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY } from './grips';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
 import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
 
@@ -44,7 +44,9 @@ class TimeTap extends BaseTap implements Tap {
 export const TickTap: Tap = new TimeTap() as unknown as Tap;
 
 // Counter & Tab taps via simple taps
-export const CounterTap: Tap = createAtomValueTap(COUNT, { initial: COUNT.defaultValue ?? 0 }) as unknown as Tap;
+export const CounterTap: Tap = createAtomValueTap(
+  COUNT, 
+  { initial: COUNT.defaultValue ?? 0, handleGrip: COUNT_TAP }) as unknown as Tap;
 export const TabTap: Tap = createAtomValueTap(CURRENT_TAB, { initial: CURRENT_TAB.defaultValue ?? 'clock' }) as unknown as Tap;
 
 // Calculator: store display in a simple drip; UI helpers mutate the value directly
@@ -133,17 +135,6 @@ export function registerAllTaps() {
   grok.registerTap(createOpenMeteoWeatherTap());
   // Keep simulated tap as a fallback at the root (lower proximity than main)
   grok.registerTapAt(grok.rootContext, WeatherTap);
-}
-
-// Convenience helpers for UI
-export function incrementCount() {
-  const d = grok.query(COUNT, main);
-  d.next((d.get() as number) + 1);
-}
-
-export function decrementCount() {
-  const d = grok.query(COUNT, main);
-  d.next((d.get() as number) - 1);
 }
 
 export function setTab(tab: 'clock' | 'calc' | 'weather') {

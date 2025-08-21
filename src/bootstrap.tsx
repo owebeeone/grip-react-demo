@@ -14,7 +14,7 @@ registerAllTaps();
 main.setValue(PAGE_SIZE, 50);
 
 // Demo exports
-export { incrementCount, decrementCount, setTab, calc } from './taps';
+export { setTab, calc } from './taps';
 
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
 // Persistent option (recommended): create grip-react-demo/.env.development with:

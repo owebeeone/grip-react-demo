@@ -1,7 +1,6 @@
 // App.tsx (demo)
-import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton } from '@owebeeone/grip-react';
-import { incrementCount, decrementCount } from './bootstrap';
-import { PAGE_SIZE, DESCRIPTION, COUNT } from './grips';
+import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton, type AtomTapHandle } from '@owebeeone/grip-react';
+import { PAGE_SIZE, DESCRIPTION, COUNT, COUNT_TAP } from './grips';
 import { CURRENT_TAB } from './grips';
 import TimeClock from './TimeClock';
 import { CALC_DISPLAY } from './grips';
@@ -67,11 +66,13 @@ export default function App() {
   // Child context: override DESCRIPTION locally (row-like)
   const rowCtx = useChildContext();
   const desc = useGrip(DESCRIPTION, rowCtx);
-  const count = useGrip(COUNT) as number; // produced by CounterTap
+  const count = useGrip(COUNT); // produced by CounterTap
+  const countTap = useGrip(COUNT_TAP);
 
   console.log('App', pageSize, count, desc);
 
   const calcDisplay = useGrip(CALC_DISPLAY);
+  
   const tab = useGrip(CURRENT_TAB); // 'clock' | 'calc'
 
   const mainContent = (
@@ -81,12 +82,14 @@ export default function App() {
 
       {tab === 'clock' && (
         <div>
-          {!(count & 1) ? <TimeClock /> : <div>Count is odd - no time</div>}
+          {!(count! & 1) ? <TimeClock /> : <div>Count is odd - no time</div>}
           <div>Page size: {pageSize}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={decrementCount}>-</button>
+            {/* Use setvalue API */}
+            <button onClick={() => countTap?.set(count! - 1)}>-</button>
             <div>Count: {count}</div>
-            <button onClick={incrementCount}>+</button>
+            {/* Use atomic api to increment as an example. */}
+            <button onClick={() => countTap?.set(c => c ? c + 1 : 1)}>+</button>
           </div>
           <div>Description: {desc}</div>
         </div>
