@@ -54,14 +54,14 @@ class CalculatorTap extends MultiAtomValueTap implements Tap {
   constructor() {
     super(
       [
-        CALC_DISPLAY as Grip<string>,
-        CALC_DIGIT_PRESSED as Grip<(d: number) => void>,
-        CALC_ADD_PRESSED as Grip<() => void>,
-        CALC_SUB_PRESSED as Grip<() => void>,
-        CALC_MUL_PRESSED as Grip<() => void>,
-        CALC_DIV_PRESSED as Grip<() => void>,
-        CALC_EQUALS_PRESSED as Grip<() => void>,
-        CALC_CLEAR_PRESSED as Grip<() => void>,
+        CALC_DISPLAY,
+        CALC_DIGIT_PRESSED,
+        CALC_ADD_PRESSED,
+        CALC_SUB_PRESSED,
+        CALC_MUL_PRESSED,
+        CALC_DIV_PRESSED,
+        CALC_EQUALS_PRESSED,
+        CALC_CLEAR_PRESSED,
       ],
       new Map<Grip<any>, any>([
         [CALC_DISPLAY as Grip<any>, (CALC_DISPLAY.defaultValue ?? '0')],
@@ -76,24 +76,24 @@ class CalculatorTap extends MultiAtomValueTap implements Tap {
     const getDisplay = () => String(this.get(CALC_DISPLAY as Grip<string>) ?? '0');
     const setDisplay = (s: string) => this.set(CALC_DISPLAY as Grip<string>, s);
 
-    this.setAll(new Map<Grip<any>, any>([[CALC_DIGIT_PRESSED as Grip<(d: number) => void>, (d: number) => {
+    this.setValue(CALC_DIGIT_PRESSED, (d: number) => {
       const display = getDisplay();
       const next = display === '0' ? String(d) : display + String(d);
       setDisplay(next);
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_ADD_PRESSED as Grip<() => void>, () => {
+    });
+    this.setValue(CALC_ADD_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '+');
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_SUB_PRESSED as Grip<() => void>, () => {
+    });
+    this.setValue(CALC_SUB_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '-');
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_MUL_PRESSED as Grip<() => void>, () => {
+    });
+    this.setValue(CALC_MUL_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '*');
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_DIV_PRESSED as Grip<() => void>, () => {
+    });
+    this.setValue(CALC_DIV_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '/');
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_EQUALS_PRESSED as Grip<() => void>, () => {
+    });
+    this.setValue(CALC_EQUALS_PRESSED, () => {
       const expr = getDisplay();
       try {
         // sanitize to numbers/operators only
@@ -102,8 +102,8 @@ class CalculatorTap extends MultiAtomValueTap implements Tap {
         const result = String(Function(`"use strict";return (${safe})`)());
         setDisplay(result);
       } catch {}
-    }]]));
-    this.setAll(new Map<Grip<any>, any>([[CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0')]]));
+    });
+    this.setValue(CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0'));
   }
 }
 export const CalcTap: Tap = new CalculatorTap() as unknown as Tap;
@@ -198,14 +198,6 @@ export function setTab(tab: 'clock' | 'calc' | 'weather') {
   d.next(tab);
 }
 
-export const calc = {
-  digit_pressed(d: number) { grok.query(CALC_DIGIT_PRESSED, main).get()?.(d); },
-  add_pressed() { grok.query(CALC_ADD_PRESSED, main).get()?.(); },
-  sub_pressed() { grok.query(CALC_SUB_PRESSED, main).get()?.(); },
-  mul_pressed() { grok.query(CALC_MUL_PRESSED, main).get()?.(); },
-  div_pressed() { grok.query(CALC_DIV_PRESSED, main).get()?.(); },
-  equals_pressed() { grok.query(CALC_EQUALS_PRESSED, main).get()?.(); },
-  clear_pressed() { grok.query(CALC_CLEAR_PRESSED, main).get()?.(); },
-};
+export const calc = new CalculatorTap();
 
 
