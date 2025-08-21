@@ -1,6 +1,6 @@
 import { type Tap, createAtomValueTap, BaseTap, Grip, MultiAtomValueTap } from '@owebeeone/grip-react';
-import { grok, main } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP, CALC_ADD_PRESSED, CALC_CLEAR_PRESSED, CALC_DIGIT_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_MUL_PRESSED, CALC_SUB_PRESSED } from './grips';
+import { grok } from './runtime';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP, CALC_ADD_PRESSED, CALC_CLEAR_PRESSED, CALC_DIGIT_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_MUL_PRESSED, CALC_SUB_PRESSED, CURRENT_TAB_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
 import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
 
@@ -47,7 +47,9 @@ export const TickTap: Tap = new TimeTap() as unknown as Tap;
 export const CounterTap: Tap = createAtomValueTap(
   COUNT, 
   { initial: COUNT.defaultValue ?? 0, handleGrip: COUNT_TAP }) as unknown as Tap;
-export const TabTap: Tap = createAtomValueTap(CURRENT_TAB, { initial: CURRENT_TAB.defaultValue ?? 'clock' }) as unknown as Tap;
+export const TabTap: Tap = createAtomValueTap(
+    CURRENT_TAB, 
+    { initial: CURRENT_TAB.defaultValue ?? 'clock', handleGrip: CURRENT_TAB_TAP });
 
 // Calculator: Multi-atom tap that publishes CALC_DISPLAY and function grips
 class CalculatorTap extends MultiAtomValueTap implements Tap {
@@ -68,10 +70,7 @@ class CalculatorTap extends MultiAtomValueTap implements Tap {
       ]),
       { handleGrip: undefined }
     );
-  }
 
-  onAttach(home: any): void {
-    super.onAttach(home);
     // Initialize function grips once
     const getDisplay = () => String(this.get(CALC_DISPLAY as Grip<string>) ?? '0');
     const setDisplay = (s: string) => this.set(CALC_DISPLAY as Grip<string>, s);
@@ -106,7 +105,7 @@ class CalculatorTap extends MultiAtomValueTap implements Tap {
     this.setValue(CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0'));
   }
 }
-export const CalcTap: Tap = new CalculatorTap() as unknown as Tap;
+export const CalcTap: Tap = new CalculatorTap();
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
 class WeatherTapImpl extends BaseTap implements Tap {
@@ -193,11 +192,6 @@ export function registerAllTaps() {
   grok.registerTapAt(grok.rootContext, WeatherTap);
 }
 
-export function setTab(tab: 'clock' | 'calc' | 'weather') {
-  const d = grok.query(CURRENT_TAB, main);
-  d.next(tab);
-}
 
-export const calc = new CalculatorTap();
 
 

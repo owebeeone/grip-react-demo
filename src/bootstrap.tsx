@@ -13,9 +13,6 @@ registerAllTaps();
 // Optional: seed an override at the root
 main.setValue(PAGE_SIZE, 50);
 
-// Demo exports
-export { setTab, calc } from './taps';
-
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
 // Persistent option (recommended): create grip-react-demo/.env.development with:
 // VITE_STRICT_MODE=true

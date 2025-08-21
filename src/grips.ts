@@ -8,6 +8,7 @@ export const COUNT = defineGrip<number>('Count', 0);
 export const COUNT_TAP = defineGrip<AtomTapHandle<number>>('Count.Tap');
 export const CALC_DISPLAY = defineGrip<string>('CalcDisplay', '0');
 export const CURRENT_TAB = defineGrip<'clock' | 'calc' | 'weather'>('CurrentTab', 'clock');
+export const CURRENT_TAB_TAP = defineGrip<AtomTapHandle<'clock' | 'calc' | 'weather'>>('CurrentTab.Tap');
 
 // Weather-specific grips moved to `./grips.weather`
 
