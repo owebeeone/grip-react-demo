@@ -1,10 +1,9 @@
 // App.tsx (demo)
-import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton, type AtomTapHandle } from '@owebeeone/grip-react';
-import { PAGE_SIZE, DESCRIPTION, COUNT, COUNT_TAP } from './grips';
+import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton } from '@owebeeone/grip-react';
+import { PAGE_SIZE, DESCRIPTION, COUNT, COUNT_TAP, CALC_DIGIT_PRESSED, CALC_ADD_PRESSED, CALC_SUB_PRESSED, CALC_MUL_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_CLEAR_PRESSED } from './grips';
 import { CURRENT_TAB } from './grips';
 import TimeClock from './TimeClock';
 import { CALC_DISPLAY } from './grips';
-import { calc } from './bootstrap';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
@@ -75,6 +74,14 @@ export default function App() {
   
   const tab = useGrip(CURRENT_TAB); // 'clock' | 'calc'
 
+  const calcDigitPressed = useGrip(CALC_DIGIT_PRESSED);
+  const calcAddPressed = useGrip(CALC_ADD_PRESSED);
+  const calcSubPressed = useGrip(CALC_SUB_PRESSED);
+  const calcMulPressed = useGrip(CALC_MUL_PRESSED);
+  const calcDivPressed = useGrip(CALC_DIV_PRESSED);
+  const calcEqualsPressed = useGrip(CALC_EQUALS_PRESSED);
+  const calcClearPressed = useGrip(CALC_CLEAR_PRESSED);
+
   const mainContent = (
     <div style={{ padding: 16 }}>
       <AppHeader />
@@ -101,16 +108,16 @@ export default function App() {
             {calcDisplay}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 8 }}>
-            {[7,8,9].map(n => <button key={n} onClick={() => calc.digit_pressed(n)}>{n}</button>)}
-            <button onClick={() => calc.div_pressed()}>/</button>
-            {[4,5,6].map(n => <button key={n} onClick={() => calc.digit_pressed(n)}>{n}</button>)}
-            <button onClick={() => calc.mul_pressed()}>*</button>
-            {[1,2,3].map(n => <button key={n} onClick={() => calc.digit_pressed(n)}>{n}</button>)}
-            <button onClick={() => calc.sub_pressed()}>-</button>
-            <button onClick={() => calc.digit_pressed(0)}>0</button>
-            <button onClick={() => calc.clear_pressed()}>C</button>
-            <button onClick={() => calc.equals_pressed()}>=</button>
-            <button onClick={() => calc.add_pressed()}>+</button>
+            {[7,8,9].map(n => <button key={n} onClick={() => calcDigitPressed?.(n)}>{n}</button>)}
+            <button onClick={() => calcDivPressed?.()}>/</button>
+            {[4,5,6].map(n => <button key={n} onClick={() => calcDigitPressed?.(n)}>{n}</button>)}
+            <button onClick={() => calcMulPressed?.()}>*</button>
+            {[1,2,3].map(n => <button key={n} onClick={() => calcDigitPressed?.(n)}>{n}</button>)}
+            <button onClick={() => calcSubPressed?.()}>-</button>
+            <button onClick={() => calcDigitPressed?.(0)}>0</button>
+            <button onClick={() => calcClearPressed?.()}>C</button>
+            <button onClick={() => calcEqualsPressed?.()}>=</button>
+            <button onClick={() => calcAddPressed?.()}>+</button>
           </div>
         </div>
       )}

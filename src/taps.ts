@@ -1,6 +1,6 @@
-import { type Tap, createAtomValueTap, BaseTap, Grip } from '@owebeeone/grip-react';
+import { type Tap, createAtomValueTap, BaseTap, Grip, MultiAtomValueTap } from '@owebeeone/grip-react';
 import { grok, main } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP } from './grips';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP, CALC_ADD_PRESSED, CALC_CLEAR_PRESSED, CALC_DIGIT_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_MUL_PRESSED, CALC_SUB_PRESSED } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
 import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
 
@@ -49,8 +49,64 @@ export const CounterTap: Tap = createAtomValueTap(
   { initial: COUNT.defaultValue ?? 0, handleGrip: COUNT_TAP }) as unknown as Tap;
 export const TabTap: Tap = createAtomValueTap(CURRENT_TAB, { initial: CURRENT_TAB.defaultValue ?? 'clock' }) as unknown as Tap;
 
-// Calculator: store display in a simple drip; UI helpers mutate the value directly
-export const CalcDisplayTap: Tap = createAtomValueTap(CALC_DISPLAY, { initial: CALC_DISPLAY.defaultValue ?? '0' }) as unknown as Tap;
+// Calculator: Multi-atom tap that publishes CALC_DISPLAY and function grips
+class CalculatorTap extends MultiAtomValueTap implements Tap {
+  constructor() {
+    super(
+      [
+        CALC_DISPLAY as Grip<string>,
+        CALC_DIGIT_PRESSED as Grip<(d: number) => void>,
+        CALC_ADD_PRESSED as Grip<() => void>,
+        CALC_SUB_PRESSED as Grip<() => void>,
+        CALC_MUL_PRESSED as Grip<() => void>,
+        CALC_DIV_PRESSED as Grip<() => void>,
+        CALC_EQUALS_PRESSED as Grip<() => void>,
+        CALC_CLEAR_PRESSED as Grip<() => void>,
+      ],
+      new Map<Grip<any>, any>([
+        [CALC_DISPLAY as Grip<any>, (CALC_DISPLAY.defaultValue ?? '0')],
+      ]),
+      { handleGrip: undefined }
+    );
+  }
+
+  onAttach(home: any): void {
+    super.onAttach(home);
+    // Initialize function grips once
+    const getDisplay = () => String(this.get(CALC_DISPLAY as Grip<string>) ?? '0');
+    const setDisplay = (s: string) => this.set(CALC_DISPLAY as Grip<string>, s);
+
+    this.setAll(new Map<Grip<any>, any>([[CALC_DIGIT_PRESSED as Grip<(d: number) => void>, (d: number) => {
+      const display = getDisplay();
+      const next = display === '0' ? String(d) : display + String(d);
+      setDisplay(next);
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_ADD_PRESSED as Grip<() => void>, () => {
+      const v = getDisplay(); setDisplay(v + '+');
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_SUB_PRESSED as Grip<() => void>, () => {
+      const v = getDisplay(); setDisplay(v + '-');
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_MUL_PRESSED as Grip<() => void>, () => {
+      const v = getDisplay(); setDisplay(v + '*');
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_DIV_PRESSED as Grip<() => void>, () => {
+      const v = getDisplay(); setDisplay(v + '/');
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_EQUALS_PRESSED as Grip<() => void>, () => {
+      const expr = getDisplay();
+      try {
+        // sanitize to numbers/operators only
+        const safe = expr.replace(/[^\d+\-*/.]/g, '');
+        // eslint-disable-next-line no-new-func
+        const result = String(Function(`"use strict";return (${safe})`)());
+        setDisplay(result);
+      } catch {}
+    }]]));
+    this.setAll(new Map<Grip<any>, any>([[CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0')]]));
+  }
+}
+export const CalcTap: Tap = new CalculatorTap() as unknown as Tap;
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
 class WeatherTapImpl extends BaseTap implements Tap {
@@ -129,7 +185,7 @@ export function registerAllTaps() {
   grok.registerTap(TickTap);
   grok.registerTap(CounterTap);
   grok.registerTap(TabTap);
-  grok.registerTap(CalcDisplayTap);
+  grok.registerTap(CalcTap);
   // Register live OpenMeteo taps at main so any context can resolve live data
   grok.registerTap(createLocationToGeoTap());
   grok.registerTap(createOpenMeteoWeatherTap());
@@ -143,30 +199,13 @@ export function setTab(tab: 'clock' | 'calc' | 'weather') {
 }
 
 export const calc = {
-  digit_pressed(d: number) {
-    const drip = grok.query(CALC_DISPLAY, main);
-    const display = String(drip.get() ?? '0');
-    const next = display === '0' ? String(d) : display + String(d);
-    drip.next(next);
-  },
-  add_pressed() {
-    const d = grok.query(CALC_DISPLAY, main); const v = String(d.get() ?? '0'); d.next(v + '+');
-  },
-  sub_pressed() {
-    const d = grok.query(CALC_DISPLAY, main); const v = String(d.get() ?? '0'); d.next(v + '-');
-  },
-  mul_pressed() {
-    const d = grok.query(CALC_DISPLAY, main); const v = String(d.get() ?? '0'); d.next(v + '*');
-  },
-  div_pressed() {
-    const d = grok.query(CALC_DISPLAY, main); const v = String(d.get() ?? '0'); d.next(v + '/');
-  },
-  equals_pressed() {
-    const d = grok.query(CALC_DISPLAY, main); const expr = String(d.get() ?? '0');
-    try { d.next(String(Function(`"use strict";return (${expr.replace(/[^\d+\-*/.]/g, '')})`)())); }
-    catch { /* ignore */ }
-  },
-  clear_pressed() { grok.query(CALC_DISPLAY, main).next('0'); },
+  digit_pressed(d: number) { grok.query(CALC_DIGIT_PRESSED, main).get()?.(d); },
+  add_pressed() { grok.query(CALC_ADD_PRESSED, main).get()?.(); },
+  sub_pressed() { grok.query(CALC_SUB_PRESSED, main).get()?.(); },
+  mul_pressed() { grok.query(CALC_MUL_PRESSED, main).get()?.(); },
+  div_pressed() { grok.query(CALC_DIV_PRESSED, main).get()?.(); },
+  equals_pressed() { grok.query(CALC_EQUALS_PRESSED, main).get()?.(); },
+  clear_pressed() { grok.query(CALC_CLEAR_PRESSED, main).get()?.(); },
 };
 
 
