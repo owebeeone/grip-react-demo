@@ -1,8 +1,18 @@
-import { type Tap, createAtomValueTap, BaseTap, Grip, MultiAtomValueTap } from '@owebeeone/grip-react';
+import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory } from '@owebeeone/grip-react';
 import { grok } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, CALC_DISPLAY, COUNT_TAP, CALC_ADD_PRESSED, CALC_CLEAR_PRESSED, CALC_DIGIT_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_MUL_PRESSED, CALC_SUB_PRESSED, CURRENT_TAB_TAP } from './grips';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
 import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
+import { CalculatorTap } from './taps_calculator';
+
+// Calculator tap factory - just because we can. This would work fine as a tap instance
+// but as a tap factory in theory we could add it in multiple places and it would
+// be instantiated as needed.
+export const CalcTap: TapFactory = {
+  kind: 'TapFactory',
+  provides: CalculatorTap.outputs,
+  build: () => new CalculatorTap(),
+}
 
 // Time tick: publish current time every second
 class TimeTap extends BaseTap implements Tap {
@@ -51,61 +61,6 @@ export const TabTap: Tap = createAtomValueTap(
     CURRENT_TAB, 
     { initial: CURRENT_TAB.defaultValue ?? 'clock', handleGrip: CURRENT_TAB_TAP });
 
-// Calculator: Multi-atom tap that publishes CALC_DISPLAY and function grips
-class CalculatorTap extends MultiAtomValueTap implements Tap {
-  constructor() {
-    super(
-      [
-        CALC_DISPLAY,
-        CALC_DIGIT_PRESSED,
-        CALC_ADD_PRESSED,
-        CALC_SUB_PRESSED,
-        CALC_MUL_PRESSED,
-        CALC_DIV_PRESSED,
-        CALC_EQUALS_PRESSED,
-        CALC_CLEAR_PRESSED,
-      ],
-      new Map<Grip<any>, any>([
-        [CALC_DISPLAY as Grip<any>, (CALC_DISPLAY.defaultValue ?? '0')],
-      ]),
-      { handleGrip: undefined }
-    );
-
-    // Initialize function grips once
-    const getDisplay = () => String(this.get(CALC_DISPLAY as Grip<string>) ?? '0');
-    const setDisplay = (s: string) => this.set(CALC_DISPLAY as Grip<string>, s);
-
-    this.setValue(CALC_DIGIT_PRESSED, (d: number) => {
-      const display = getDisplay();
-      const next = display === '0' ? String(d) : display + String(d);
-      setDisplay(next);
-    });
-    this.setValue(CALC_ADD_PRESSED, () => {
-      const v = getDisplay(); setDisplay(v + '+');
-    });
-    this.setValue(CALC_SUB_PRESSED, () => {
-      const v = getDisplay(); setDisplay(v + '-');
-    });
-    this.setValue(CALC_MUL_PRESSED, () => {
-      const v = getDisplay(); setDisplay(v + '*');
-    });
-    this.setValue(CALC_DIV_PRESSED, () => {
-      const v = getDisplay(); setDisplay(v + '/');
-    });
-    this.setValue(CALC_EQUALS_PRESSED, () => {
-      const expr = getDisplay();
-      try {
-        // sanitize to numbers/operators only
-        const safe = expr.replace(/[^\d+\-*/.]/g, '');
-        // eslint-disable-next-line no-new-func
-        const result = String(Function(`"use strict";return (${safe})`)());
-        setDisplay(result);
-      } catch {}
-    });
-    this.setValue(CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0'));
-  }
-}
-export const CalcTap: Tap = new CalculatorTap();
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
 class WeatherTapImpl extends BaseTap implements Tap {
