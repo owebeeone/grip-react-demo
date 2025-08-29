@@ -1,7 +1,6 @@
 import { type Tap, createAsyncMultiTap } from '@owebeeone/grip-react';
 import type { Grip, TapFactory } from '@owebeeone/grip-react';
 import { GEO_LAT, GEO_LNG, GEO_LABEL, WEATHER_HUMIDITY, WEATHER_LOCATION, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_TEMP_C, WEATHER_UV_INDEX, WEATHER_WIND_DIR, WEATHER_WIND_SPEED } from './grips.weather';
-import type { GripContext } from '@owebeeone/grip-react';
 
 function toCompass(deg: number | undefined): string {
   if (deg == null || !Number.isFinite(deg)) return '';
@@ -30,14 +29,14 @@ export function createLocationToGeoTap(): Tap {
     destinationParamGrips: [WEATHER_LOCATION],
     cacheTtlMs: 30 * 60 * 1000,
     deadlineMs: 5000,
-    requestKeyOf: (dest: GripContext) => {
-      const key = (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim().toLowerCase() || undefined;
-      console.log(`[LocationToGeoTap] requestKeyOf for ${dest.id}: ${key}`);
+    requestKeyOf: (params) => {
+      const key = (params.get(WEATHER_LOCATION) ?? '').toString().trim().toLowerCase() || undefined;
+      console.log(`[LocationToGeoTap] requestKeyOf for ${params.destContext.id}: ${key}`);
       return key;
     },
-    fetcher: async (dest, signal) => {
-      const q = (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim();
-      console.log(`[LocationToGeoTap] fetcher: Fetching geo data for "${q}" in ${dest.id}`);
+    fetcher: async (params, signal) => {
+      const q = (params.get(WEATHER_LOCATION) ?? '').toString().trim();
+      console.log(`[LocationToGeoTap] fetcher: Fetching geo data for "${q}" in ${params.destContext.id}`);
       if (!q) return { lat: undefined, lng: undefined, label: '' };
       const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
       const res = await fetch(url, { signal });
@@ -47,7 +46,7 @@ export function createLocationToGeoTap(): Tap {
       if (!r) return { lat: undefined, lng: undefined, label: '' };
       return { lat: r.latitude as number, lng: r.longitude as number, label: String(r.name ?? q) };
     },
-    mapResult: (_dest, r) => new Map<Grip<any>, any>([
+    mapResult: (_params, r) => new Map<Grip<any>, any>([
       [GEO_LAT as unknown as Grip<any>, r.lat],
       [GEO_LNG as unknown as Grip<any>, r.lng],
       [GEO_LABEL as unknown as Grip<any>, r.label ?? ''],
@@ -76,30 +75,30 @@ export function createOpenMeteoWeatherTap(): Tap {
     destinationParamGrips: [GEO_LAT, GEO_LNG],
     cacheTtlMs: 10 * 60 * 1000,
     deadlineMs: 7000,
-    requestKeyOf: (dest) => {
-      const lat = dest.getOrCreateConsumer(GEO_LAT).get();
-      const lng = dest.getOrCreateConsumer(GEO_LNG).get();
+    requestKeyOf: (params) => {
+      const lat = params.get(GEO_LAT);
+      const lng = params.get(GEO_LNG);
       if (lat == null || lng == null) {
-        console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${dest.id}: undefined (lat/lng missing)`);
+        console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${params.destContext.id}: undefined (lat/lng missing)`);
         return undefined;
       }
       const rl = Math.round((lat as number) * 10000) / 10000;
       const rg = Math.round((lng as number) * 10000) / 10000;
       const key = `${rl}:${rg}`;
-      console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${dest.id}: ${key}`);
+      console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${params.destContext.id}: ${key}`);
       return key;
     },
-    fetcher: async (dest, signal) => {
-      const lat = dest.getOrCreateConsumer(GEO_LAT).get();
-      const lng = dest.getOrCreateConsumer(GEO_LNG).get();
-      console.log(`[OpenMeteoWeatherTap] fetcher: Fetching weather for lat=${lat}, lng=${lng} in ${dest.id}`);
+    fetcher: async (params, signal) => {
+      const lat = params.get(GEO_LAT);
+      const lng = params.get(GEO_LNG);
+      console.log(`[OpenMeteoWeatherTap] fetcher: Fetching weather for lat=${lat}, lng=${lng} in ${params.destContext.id}`);
       if (lat == null || lng == null) return null;
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&hourly=relativehumidity_2m,precipitation_probability,cloudcover,uv_index,winddirection_10m,windspeed_10m`;
       const res = await fetch(url, { signal });
       if (!res.ok) return null;
       return await res.json();
     },
-    mapResult: (_dest, data) => {
+    mapResult: (_params, data) => {
       const updates = new Map<Grip<any>, any>();
       if (!data) {
         updates.set(WEATHER_TEMP_C as any, undefined);
@@ -134,7 +133,7 @@ export function createOpenMeteoWeatherTap(): Tap {
         updates.set(WEATHER_SUNNY_PCT as any, sunny);
         updates.set(WEATHER_UV_INDEX as any, uv);
       }
-      console.log(`[OpenMeteoWeatherTap] mapResult: Publishing updates for ${_dest.id}`, updates);
+      console.log(`[OpenMeteoWeatherTap] mapResult: Publishing updates for ${_params.destContext.id}`, updates);
       return updates;
     }
   });
