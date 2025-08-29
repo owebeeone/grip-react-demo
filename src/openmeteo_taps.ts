@@ -60,7 +60,8 @@ export const PROVIDES = [
   WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX
 ];
 
-export function createOpenMeteoWeatherTap(key?: TapFactory): Tap {
+// @ts-ignore
+export function createOpenMeteoWeatherTap(): Tap {
   type Outs = {
     T: typeof WEATHER_TEMP_C;
     H: typeof WEATHER_HUMIDITY;
@@ -160,7 +161,6 @@ export function createOpenMeteoWeatherTap(key?: TapFactory): Tap {
 class MeteoTapFactory implements TapFactory {
   readonly kind: 'TapFactory' = 'TapFactory';
   readonly provides = PROVIDES;
-  readonly key: TapFactory = this;
 
   build() {
     return createOpenMeteoWeatherTap();

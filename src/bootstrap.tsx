@@ -13,7 +13,7 @@ registerAllTaps();
 // VITE_STRICT_MODE=true
 // or
 // VITE_STRICT_MODE=false
-const USE_STRICT_MODE = (import.meta as any).env?.VITE_STRICT_MODE === 'true';
+// const USE_STRICT_MODE = (import.meta as any).env?.VITE_STRICT_MODE === 'true';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 const app = (

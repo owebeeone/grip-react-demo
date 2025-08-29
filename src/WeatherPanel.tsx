@@ -2,7 +2,6 @@ import { useGrip } from '@owebeeone/grip-react';
 import { WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
 import WeatherColumn from './WeatherColumn';
 import './App.css';
-import { GEO_LABEL } from './grips.weather';
 
 export default function WeatherPanel() {
   const weatherProvider = useGrip(WEATHER_PROVIDER_NAME);

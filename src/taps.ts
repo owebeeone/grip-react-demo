@@ -2,7 +2,7 @@ import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory, withOneOf
 import { grok } from './runtime';
 import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP, WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
-import { createLocationToGeoTap, createOpenMeteoWeatherTap, METEO_TAP_FACTORY } from './openmeteo_taps';
+import { createLocationToGeoTap, METEO_TAP_FACTORY } from './openmeteo_taps';
 import { CalculatorTap } from './taps_calculator';
 
 // Calculator tap factory - just because we can. This would work fine as a tap instance
