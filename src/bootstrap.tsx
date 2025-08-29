@@ -1,17 +1,12 @@
 // bootstrap.ts (or main.tsx before rendering App)
 import { GripProvider } from '@owebeeone/grip-react';
 import { grok, main } from './runtime';
-import { PAGE_SIZE } from './grips';
 import { registerAllTaps } from './taps';
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
 // Register taps upfront
 registerAllTaps();
-
-// Optional: seed an override at the root
-main.setValue(PAGE_SIZE, 50);
 
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
 // Persistent option (recommended): create grip-react-demo/.env.development with:
@@ -27,4 +22,5 @@ const app = (
   </GripProvider>
 );
 
-root.render(USE_STRICT_MODE ? <React.StrictMode>{app}</React.StrictMode> : app);
+// root.render(USE_STRICT_MODE ? <React.StrictMode>{app}</React.StrictMode> : app);
+root.render(app);

@@ -4,7 +4,7 @@ import { memo } from 'react';
 
 function TimeClockInner() {
   const now = useGrip(CURRENT_TIME) as Date;
-  console.log('TimeClock', now.toLocaleTimeString());
+  //console.log('TimeClock', now.toLocaleTimeString());
   return <div>Time: {now.toLocaleTimeString()}</div>;
 }
 

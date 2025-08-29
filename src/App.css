@@ -40,3 +40,29 @@
 .read-the-docs {
   color: #888;
 }
+
+.weather-provider-button {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.weather-provider-button:disabled {
+  border: 2px solid #007bff;
+  background-color: #f0f0f0;
+  cursor: default;
+  opacity: 0.6;
+}
+
+.weather-provider-button:not(:disabled):hover {
+  background-color: #dcdcdc;
+  border-color: #999;
+}
+
+.weather-provider-button:disabled:hover {
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}

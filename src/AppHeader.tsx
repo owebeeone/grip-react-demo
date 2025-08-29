@@ -4,7 +4,7 @@ import { WEATHER_LOCATION, WEATHER_TEMP_C } from './grips.weather';
 
 export default function AppHeader() {
   const { context: parentCtx } = useRuntime();
-  const ctx = useMemo(() => parentCtx.createChild(), [parentCtx]);
+  const ctx = useMemo(() => parentCtx.getGripConsumerContext().createChild(), [parentCtx]);
   // Provide WEATHER_LOCATION via a simple tap in the child context
   useEffect(() => {
     const tap = createAtomValueTap(WEATHER_LOCATION, { initial: 'Sydney' }) as unknown as Tap;

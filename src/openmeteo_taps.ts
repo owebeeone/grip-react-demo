@@ -1,5 +1,5 @@
 import { type Tap, createAsyncMultiTap } from '@owebeeone/grip-react';
-import type { Grip } from '@owebeeone/grip-react';
+import type { Grip, TapFactory } from '@owebeeone/grip-react';
 import { GEO_LAT, GEO_LNG, GEO_LABEL, WEATHER_HUMIDITY, WEATHER_LOCATION, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_TEMP_C, WEATHER_UV_INDEX, WEATHER_WIND_DIR, WEATHER_WIND_SPEED } from './grips.weather';
 import type { GripContext } from '@owebeeone/grip-react';
 
@@ -30,9 +30,14 @@ export function createLocationToGeoTap(): Tap {
     destinationParamGrips: [WEATHER_LOCATION],
     cacheTtlMs: 30 * 60 * 1000,
     deadlineMs: 5000,
-    requestKeyOf: (dest: GripContext) => (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim().toLowerCase() || undefined,
+    requestKeyOf: (dest: GripContext) => {
+      const key = (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim().toLowerCase() || undefined;
+      console.log(`[LocationToGeoTap] requestKeyOf for ${dest.id}: ${key}`);
+      return key;
+    },
     fetcher: async (dest, signal) => {
       const q = (dest.getOrCreateConsumer(WEATHER_LOCATION).get() ?? '').toString().trim();
+      console.log(`[LocationToGeoTap] fetcher: Fetching geo data for "${q}" in ${dest.id}`);
       if (!q) return { lat: undefined, lng: undefined, label: '' };
       const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
       const res = await fetch(url, { signal });
@@ -50,7 +55,12 @@ export function createLocationToGeoTap(): Tap {
   });
 }
 
-export function createOpenMeteoWeatherTap(): Tap {
+export const PROVIDES = [
+  WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR,
+  WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX
+];
+
+export function createOpenMeteoWeatherTap(key?: TapFactory): Tap {
   type Outs = {
     T: typeof WEATHER_TEMP_C;
     H: typeof WEATHER_HUMIDITY;
@@ -61,24 +71,27 @@ export function createOpenMeteoWeatherTap(): Tap {
     UV: typeof WEATHER_UV_INDEX;
   };
   const tap = createAsyncMultiTap<Outs, any>({
-    provides: [
-      WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR,
-      WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX
-    ],
+    provides: PROVIDES,
     destinationParamGrips: [GEO_LAT, GEO_LNG],
     cacheTtlMs: 10 * 60 * 1000,
     deadlineMs: 7000,
     requestKeyOf: (dest) => {
       const lat = dest.getOrCreateConsumer(GEO_LAT).get();
       const lng = dest.getOrCreateConsumer(GEO_LNG).get();
-      if (lat == null || lng == null) return undefined;
+      if (lat == null || lng == null) {
+        console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${dest.id}: undefined (lat/lng missing)`);
+        return undefined;
+      }
       const rl = Math.round((lat as number) * 10000) / 10000;
       const rg = Math.round((lng as number) * 10000) / 10000;
-      return `${rl}:${rg}`;
+      const key = `${rl}:${rg}`;
+      console.log(`[OpenMeteoWeatherTap] requestKeyOf for ${dest.id}: ${key}`);
+      return key;
     },
     fetcher: async (dest, signal) => {
       const lat = dest.getOrCreateConsumer(GEO_LAT).get();
       const lng = dest.getOrCreateConsumer(GEO_LNG).get();
+      console.log(`[OpenMeteoWeatherTap] fetcher: Fetching weather for lat=${lat}, lng=${lng} in ${dest.id}`);
       if (lat == null || lng == null) return null;
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&hourly=relativehumidity_2m,precipitation_probability,cloudcover,uv_index,winddirection_10m,windspeed_10m`;
       const res = await fetch(url, { signal });
@@ -86,42 +99,42 @@ export function createOpenMeteoWeatherTap(): Tap {
       return await res.json();
     },
     mapResult: (_dest, data) => {
+      const updates = new Map<Grip<any>, any>();
       if (!data) {
-        return new Map<Grip<any>, any>([
-          [WEATHER_TEMP_C as any, undefined],
-          [WEATHER_HUMIDITY as any, undefined],
-          [WEATHER_WIND_SPEED as any, undefined],
-          [WEATHER_WIND_DIR as any, ''],
-          [WEATHER_RAIN_PCT as any, undefined],
-          [WEATHER_SUNNY_PCT as any, undefined],
-          [WEATHER_UV_INDEX as any, undefined],
-        ]);
+        updates.set(WEATHER_TEMP_C as any, undefined);
+        updates.set(WEATHER_HUMIDITY as any, undefined);
+        updates.set(WEATHER_WIND_SPEED as any, undefined);
+        updates.set(WEATHER_WIND_DIR as any, '');
+        updates.set(WEATHER_RAIN_PCT as any, undefined);
+        updates.set(WEATHER_SUNNY_PCT as any, undefined);
+        updates.set(WEATHER_UV_INDEX as any, undefined);
+      } else {
+        const cw = data.current_weather ?? {};
+        const hourly = data.hourly ?? {};
+        const times: string[] = hourly.time ?? [];
+        const idx = cw.time && Array.isArray(times) && times.length ? nearestHourIndex(times, cw.time) : 0;
+        const temp = cw.temperature as number | undefined;
+        const windspeed = (cw.windspeed as number | undefined);
+        const winddirDeg = (cw.winddirection as number | undefined);
+        const humidityArr: number[] = hourly.relativehumidity_2m ?? [];
+        const rainArr: number[] = hourly.precipitation_probability ?? [];
+        const cloudArr: number[] = hourly.cloudcover ?? [];
+        const uvArr: number[] = hourly.uv_index ?? [];
+        const humidity = humidityArr[idx] ?? undefined;
+        const rain = rainArr[idx] ?? undefined;
+        const cloud = cloudArr[idx] ?? undefined;
+        const sunny = cloud != null ? Math.max(0, 100 - cloud) : undefined;
+        const uv = uvArr[idx] ?? undefined;
+        updates.set(WEATHER_TEMP_C as any, temp);
+        updates.set(WEATHER_HUMIDITY as any, humidity);
+        updates.set(WEATHER_WIND_SPEED as any, windspeed);
+        updates.set(WEATHER_WIND_DIR as any, toCompass(winddirDeg));
+        updates.set(WEATHER_RAIN_PCT as any, rain);
+        updates.set(WEATHER_SUNNY_PCT as any, sunny);
+        updates.set(WEATHER_UV_INDEX as any, uv);
       }
-      const cw = data.current_weather ?? {};
-      const hourly = data.hourly ?? {};
-      const times: string[] = hourly.time ?? [];
-      const idx = cw.time && Array.isArray(times) && times.length ? nearestHourIndex(times, cw.time) : 0;
-      const temp = cw.temperature as number | undefined;
-      const windspeed = (cw.windspeed as number | undefined);
-      const winddirDeg = (cw.winddirection as number | undefined);
-      const humidityArr: number[] = hourly.relativehumidity_2m ?? [];
-      const rainArr: number[] = hourly.precipitation_probability ?? [];
-      const cloudArr: number[] = hourly.cloudcover ?? [];
-      const uvArr: number[] = hourly.uv_index ?? [];
-      const humidity = humidityArr[idx] ?? undefined;
-      const rain = rainArr[idx] ?? undefined;
-      const cloud = cloudArr[idx] ?? undefined;
-      const sunny = cloud != null ? Math.max(0, 100 - cloud) : undefined;
-      const uv = uvArr[idx] ?? undefined;
-      return new Map<Grip<any>, any>([
-        [WEATHER_TEMP_C as any, temp],
-        [WEATHER_HUMIDITY as any, humidity],
-        [WEATHER_WIND_SPEED as any, windspeed],
-        [WEATHER_WIND_DIR as any, toCompass(winddirDeg)],
-        [WEATHER_RAIN_PCT as any, rain],
-        [WEATHER_SUNNY_PCT as any, sunny],
-        [WEATHER_UV_INDEX as any, uv],
-      ]);
+      console.log(`[OpenMeteoWeatherTap] mapResult: Publishing updates for ${_dest.id}`, updates);
+      return updates;
     }
   });
   // Add a 10-minute refresh interval by calling produce({ forceRefetch: true })
@@ -144,4 +157,14 @@ export function createOpenMeteoWeatherTap(): Tap {
   return tap;
 }
 
+class MeteoTapFactory implements TapFactory {
+  readonly kind: 'TapFactory' = 'TapFactory';
+  readonly provides = PROVIDES;
+  readonly key: TapFactory = this;
+
+  build() {
+    return createOpenMeteoWeatherTap();
+  }
+}
+export const METEO_TAP_FACTORY = new MeteoTapFactory();
 

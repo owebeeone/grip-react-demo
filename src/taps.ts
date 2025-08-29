@@ -1,18 +1,23 @@
-import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory } from '@owebeeone/grip-react';
+import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory, withOneOf } from '@owebeeone/grip-react';
 import { grok } from './runtime';
-import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP } from './grips';
+import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP, WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
-import { createLocationToGeoTap, createOpenMeteoWeatherTap } from './openmeteo_taps';
+import { createLocationToGeoTap, createOpenMeteoWeatherTap, METEO_TAP_FACTORY } from './openmeteo_taps';
 import { CalculatorTap } from './taps_calculator';
 
 // Calculator tap factory - just because we can. This would work fine as a tap instance
 // but as a tap factory in theory we could add it in multiple places and it would
 // be instantiated as needed.
-export const CalcTap: TapFactory = {
-  kind: 'TapFactory',
-  provides: CalculatorTap.outputs,
-  build: () => new CalculatorTap(),
+class CalcTapFactory implements TapFactory {
+  readonly kind: 'TapFactory' = 'TapFactory';
+  readonly provides = CalculatorTap.outputs;
+  readonly key: TapFactory = this;
+
+  build() {
+    return new CalculatorTap();
+  }
 }
+export const CalcTap = new CalcTapFactory();
 
 // Time tick: publish current time every second
 class TimeTap extends BaseTap implements Tap {
@@ -60,6 +65,9 @@ export const CounterTap: Tap = createAtomValueTap(
 export const TabTap: Tap = createAtomValueTap(
     CURRENT_TAB, 
     { initial: CURRENT_TAB.defaultValue ?? 'clock', handleGrip: CURRENT_TAB_TAP });
+export const WeatherProviderTap: Tap = createAtomValueTap(
+  WEATHER_PROVIDER_NAME, 
+  { initial: WEATHER_PROVIDER_NAME.defaultValue ?? 'meteo', handleGrip: WEATHER_PROVIDER_NAME_TAP });
 
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
@@ -140,13 +148,19 @@ export function registerAllTaps() {
   grok.registerTap(CounterTap);
   grok.registerTap(TabTap);
   grok.registerTap(CalcTap);
+  grok.registerTap(WeatherProviderTap);
   // Register live OpenMeteo taps at main so any context can resolve live data
   grok.registerTap(createLocationToGeoTap());
-  grok.registerTap(createOpenMeteoWeatherTap());
+  // grok.registerTap(createOpenMeteoWeatherTap());
   // Keep simulated tap as a fallback at the root (lower proximity than main)
-  grok.registerTapAt(grok.rootContext, WeatherTap);
-}
+  //grok.registerTapAt(grok.rootContext, WeatherTap);
 
+  const mockQuery = withOneOf(WEATHER_PROVIDER_NAME, 'mock', 10).build();
+  grok.addBinding({ id: 'mock-weather-binding', query: mockQuery, tap: WeatherTap, baseScore: 5 });
+
+  const meteoQuery = withOneOf(WEATHER_PROVIDER_NAME, 'meteo', 10).build();
+  grok.addBinding({ id: 'meteo-weather-binding', query: meteoQuery, tap: METEO_TAP_FACTORY, baseScore: 5 });
+}
 
 
 
