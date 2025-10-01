@@ -7,7 +7,7 @@ import { CALC_DISPLAY } from './grips';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {
@@ -82,6 +82,24 @@ export default function App() {
   const calcEqualsPressed = useGrip(CALC_EQUALS_PRESSED);
   const calcClearPressed = useGrip(CALC_CLEAR_PRESSED);
 
+  useEffect(() => {
+    countTap?.set(1);
+  }, [countTap]);
+
+  const inc = (c: number) => {
+    if (c === undefined) {
+      return 1;
+    }
+    return c + 1;
+  };
+  const dec = (c: number) => {
+    if (c === undefined) {
+      return 0;
+    }
+    return c - 1;
+  };
+
+
   const mainContent = (
     <div style={{ padding: 16 }}>
       <AppHeader />
@@ -93,10 +111,10 @@ export default function App() {
           <div>Page size: {pageSize}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Use setvalue API */}
-            <button onClick={() => countTap?.set(count! - 1)}>-</button>
+            <button onClick={() => countTap?.set(count? - 1 : 0)}>-</button>
             <div>Count: {count}</div>
             {/* Use atomic api to increment as an example. */}
-            <button onClick={() => countTap?.set(c => c ? c + 1 : 1)}>+</button>
+            <button onClick={() => countTap?.update(inc)}>+</button>
           </div>
           <div>Description: {desc}</div>
         </div>

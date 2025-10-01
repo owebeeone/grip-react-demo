@@ -26,24 +26,24 @@ export class CalculatorTap extends MultiAtomValueTap implements Tap {
     const getDisplay = () => String(this.get(CALC_DISPLAY as Grip<string>) ?? '0');
     const setDisplay = (s: string) => this.set(CALC_DISPLAY as Grip<string>, s);
 
-    this.setValue(CALC_DIGIT_PRESSED, (d: number) => {
+    this.set(CALC_DIGIT_PRESSED, (d: number) => {
       const display = getDisplay();
       const next = display === '0' ? String(d) : display + String(d);
       setDisplay(next);
     });
-    this.setValue(CALC_ADD_PRESSED, () => {
+    this.set(CALC_ADD_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '+');
     });
-    this.setValue(CALC_SUB_PRESSED, () => {
+    this.set(CALC_SUB_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '-');
     });
-    this.setValue(CALC_MUL_PRESSED, () => {
+    this.set(CALC_MUL_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '*');
     });
-    this.setValue(CALC_DIV_PRESSED, () => {
+    this.set(CALC_DIV_PRESSED, () => {
       const v = getDisplay(); setDisplay(v + '/');
     });
-    this.setValue(CALC_EQUALS_PRESSED, () => {
+    this.set(CALC_EQUALS_PRESSED, () => {
       const expr = getDisplay();
       try {
         // sanitize to numbers/operators only
@@ -53,6 +53,6 @@ export class CalculatorTap extends MultiAtomValueTap implements Tap {
         setDisplay(result);
       } catch {}
     });
-    this.setValue(CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0'));
+    this.set(CALC_CLEAR_PRESSED as Grip<() => void>, () => setDisplay('0'));
   }
 }
