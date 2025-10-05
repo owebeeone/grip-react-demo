@@ -111,7 +111,7 @@ export default function App() {
           <div>Page size: {pageSize}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Use setvalue API */}
-            <button onClick={() => countTap?.set(count? - 1 : 0)}>-</button>
+            <button onClick={() => countTap?.update(dec)}>-</button>
             <div>Count: {count}</div>
             {/* Use atomic api to increment as an example. */}
             <button onClick={() => countTap?.update(inc)}>+</button>
