@@ -1,14 +1,18 @@
 # SETTING\_UP\_THIS — `@owebeeone/grip-react` and Demo App
 
+> **Note**: This demo now uses the published `@owebeeone/grip-react` package from npm (version 0.2.0+) by default. Simply run `npm install` to get started.
+>
+> **This guide is for local development** when you want to work on both `grip-react` and `grip-react-demo` together using `npm link` for hot-reloading during development.
+
 A step‑by‑step guide to:
 
 1. Create the **grip-react** library (TypeScript, tsup, React peer deps)
 2. (Optional) Publish it to npm as `@owebeeone/grip-react`
 3. Scaffold a **Vite React+TS demo app**
-4. **Link** the library into the demo with `npm link`
+4. **Link** the library into the demo with `npm link` (for local development)
 5. Run, debug, and iterate quickly
 
-> You do **not** need to publish to npm to test the demo—`npm link` symlinks your local library into the app.
+> For local development, you do **not** need to publish to npm—`npm link` symlinks your local library into the app for hot-reloading.
 
 ---
 
@@ -174,12 +178,15 @@ npm publish           # publishes scoped package public (thanks to publishConfig
 
 ## 3) Create the **demo app**: `grip-react-demo`
 
+> **Note**: If you're setting up a new demo app, it will use the published `@owebeeone/grip-react` package from npm by default. To use a local development version, follow the linking steps in section 4.
+
 ### 3.1 Scaffold with Vite (macOS/Linux)
 
 ```bash
 npm create vite@latest grip-react-demo -- --template react-ts
 cd grip-react-demo
 npm install
+# This will install @owebeeone/grip-react from npm
 ```
 
 ### 3.1 Scaffold with Vite (Windows PowerShell)
@@ -188,11 +195,32 @@ npm install
 npx create-vite@latest grip-react-demo --template react-ts
 cd grip-react-demo
 npm install
+# This will install @owebeeone/grip-react from npm
 ```
 
 > Tip: If PowerShell swallows flags, use `npx --% create-vite@latest grip-react-demo --template react-ts`.
 
-### 3.2 (Recommended) Vite tweaks for linked packages
+### 3.2 Add the grip-react dependency
+
+Add `@owebeeone/grip-react` to your `package.json` dependencies:
+
+```bash
+npm install @owebeeone/grip-react
+```
+
+Or manually add to `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@owebeeone/grip-react": "^0.2.0"
+  }
+}
+```
+
+> **For local development**: If you want to use `npm link` instead (see section 4), you can skip this step and link the local package instead.
+
+### 3.3 (Recommended) Vite tweaks for linked packages
 
 Edit `vite.config.ts`:
 
@@ -207,7 +235,7 @@ export default defineConfig({
 });
 ```
 
-### 3.3 Demo UI code
+### 3.4 Demo UI code
 
 Replace `src/App.tsx`:
 
@@ -262,7 +290,11 @@ export default function App() {
 
 ---
 
-## 4) Link the library into the demo (no publish required)
+## 4) Link the library into the demo (for local development)
+
+> **Note**: This section is only needed if you want to develop both `grip-react` and `grip-react-demo` together with hot-reloading. If you're just using the demo with the published package, you can skip this section.
+
+Linking will override the published npm package with your local development version.
 
 ### 4.1 Link the lib globally
 
@@ -319,6 +351,8 @@ Now edits in `grip-react/src` rebuild to `dist/`; Vite picks them up via the sym
 
 ## 6) Alternatives to `npm link` (optional)
 
+These methods will override the published npm package with a local version:
+
 - **Local tarball** (closest to a real publish)
   ```bash
   cd grip-react && npm run build && npm pack
@@ -329,9 +363,13 @@ Now edits in `grip-react/src` rebuild to `dist/`; Vite picks them up via the sym
   cd grip-react-demo && npm i ../grip-react
   ```
 
+> To restore the published package, remove the local dependency and run `npm install`.
+
 ---
 
 ## 7) Unlink / cleanup
+
+To switch back to using the published npm package:
 
 (macOS/Linux)
 
@@ -349,7 +387,7 @@ npm unlink --no-save @owebeeone/grip-react
 npm unlink -g @owebeeone/grip-react
 ```
 
-Then `npm install` in the demo to restore normal deps.
+Then `npm install` in the demo to restore the published package from npm.
 
 ---
 

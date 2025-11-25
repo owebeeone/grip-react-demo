@@ -1,69 +1,88 @@
-# React + TypeScript + Vite
+# grip-react-demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript demo application showcasing GRIP (Generalized Retrieval Intent Provisioning) using `@owebeeone/grip-react`.
 
-Currently, two official plugins are available:
+This demo demonstrates reactive data flows, async state management, and context-aware data resolution through React hooks. It includes examples of atom taps, function taps, and async taps with real-world use cases.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **Calculator** - Demonstrates function taps with state management
+- **Weather Integration** - Shows async taps with OpenMeteo API integration
+- **Time Clock** - Simple atom tap example
+- **Context Scoping** - Demonstrates hierarchical context resolution
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- Node.js 20+ 
+- npm or yarn
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+This will install `@owebeeone/grip-react` from npm (version 0.2.0 or higher).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Development
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+The application will be available at `http://localhost:5173` (or the next available port).
+
+### Build
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+- `src/grips.ts` - Grip definitions
+- `src/grips.weather.ts` - Weather-specific Grips
+- `src/taps.ts` - Tap implementations
+- `src/taps_calculator.ts` - Calculator function taps
+- `src/openmeteo_taps.ts` - Async weather data taps
+- `src/runtime.ts` - GRIP runtime setup
+- `src/App.tsx` - Main application component
+
+## Key Concepts Demonstrated
+
+### Atom Taps
+Simple state containers for local values (e.g., counter, current tab).
+
+### Function Taps
+Derived/computed values that transform inputs (e.g., calculator operations).
+
+### Async Taps
+Asynchronous data fetching with caching and state management (e.g., weather data).
+
+### Context Hierarchy
+Demonstrates how data resolution works through the context graph.
+
+## Documentation
+
+- **Weather Tap Implementation**: See `WEATHER_TAP.md` for detailed explanation of the weather async tap
+- **Setup Guide**: See `SETTING_UP_THIS.md` for local development setup (using `npm link`) and architecture details
+
+> **Note**: This demo uses the published `@owebeeone/grip-react` package from npm. For local development of both packages together, see `SETTING_UP_THIS.md`.
+
+## Related Packages
+
+- **`@owebeeone/grip-core`** - Framework-agnostic GRIP engine
+- **`@owebeeone/grip-react`** - React hooks and components for GRIP
+- **`grip-vue-demo`** - Vue 3 version of this demo
+
+## License
+
+MIT

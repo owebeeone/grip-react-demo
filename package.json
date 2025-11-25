@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@owebeeone/grip-react": "file:../grip-react",
+    "@owebeeone/grip-react": "^0.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-resizable-panels": "^3.0.4"
