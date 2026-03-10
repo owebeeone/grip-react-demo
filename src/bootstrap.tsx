@@ -5,6 +5,7 @@ import { registerAllTaps } from './taps';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ensureDemoBrowserSession } from './demo_session';
+import { DemoGlialSessionSync } from './demo_glial_sync';
 
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
 // Persistent option (recommended): create grip-react-demo/.env.development with:
@@ -23,8 +24,23 @@ async function bootstrap() {
     flushDelayMs: 250,
   });
 
+  let glialSync: DemoGlialSessionSync | null = null;
+  if (browserSession.sessionKind !== 'local') {
+    glialSync = new DemoGlialSessionSync({
+      grok,
+      store: browserSession.store,
+      sessionId: browserSession.glialSessionId,
+      title: browserSession.title,
+      baseUrl: browserSession.glialBaseUrl,
+      userId: browserSession.glialUserId,
+      sessionKind: browserSession.sessionKind,
+    });
+    await glialSync.start();
+  }
+
   const flushPersistence = () => {
     void grok.flushLocalPersistence();
+    void glialSync?.flushNow();
   };
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -33,6 +49,9 @@ async function bootstrap() {
   };
   window.addEventListener('pagehide', flushPersistence);
   document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('beforeunload', () => {
+    glialSync?.stop();
+  });
 
   const root = ReactDOM.createRoot(document.getElementById('root')!);
   const app = (

@@ -11,9 +11,13 @@ import React, { useEffect, useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import {
   createAndSelectNewDemoLocalSession,
+  createAndSelectNewDemoRemoteSession,
   getCurrentDemoBrowserSession,
   listDemoLocalSessions,
+  listDemoRemoteSessions,
   selectDemoLocalSession,
+  selectDemoRemoteSession,
+  updateDemoStorageMode,
 } from './demo_session';
 
 interface SessionOption {
@@ -72,31 +76,55 @@ function ResizableGraphWrapper(props: { children: React.ReactNode }) {
 
 function SessionControls() {
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [currentSessionKind, setCurrentSessionKind] = useState<string>('local');
   const [storageMode, setStorageMode] = useState<string>('local');
   const [localSessions, setLocalSessions] = useState<SessionOption[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [remoteSessions, setRemoteSessions] = useState<SessionOption[]>([]);
+  const [selectedLocalSessionId, setSelectedLocalSessionId] = useState<string>('');
+  const [selectedSharedSessionId, setSelectedSharedSessionId] = useState<string>('');
+  const [selectedStorageSessionId, setSelectedStorageSessionId] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const [current, sessions] = await Promise.all([
+      const [current, sessions, remote] = await Promise.all([
         getCurrentDemoBrowserSession(),
         listDemoLocalSessions(),
+        listDemoRemoteSessions().catch(() => []),
       ]);
       if (cancelled) {
         return;
       }
       setCurrentSessionId(current.glialSessionId);
+      setCurrentSessionKind(current.sessionKind);
       setStorageMode(current.storageMode);
       setLocalSessions(sessions);
-      setSelectedSessionId(current.glialSessionId);
+      setRemoteSessions(remote);
+      setSelectedLocalSessionId(current.glialSessionId);
+      setSelectedSharedSessionId(remote[0]?.session_id ?? '');
+      setSelectedStorageSessionId(remote[0]?.session_id ?? '');
     };
     void load();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setSelectedSharedSessionId((current) => {
+      if (current && remoteSessions.some((session) => session.session_id === current)) {
+        return current;
+      }
+      return remoteSessions[0]?.session_id ?? '';
+    });
+    setSelectedStorageSessionId((current) => {
+      if (current && remoteSessions.some((session) => session.session_id === current)) {
+        return current;
+      }
+      return remoteSessions[0]?.session_id ?? '';
+    });
+  }, [remoteSessions]);
 
   const reloadIntoSession = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -114,12 +142,31 @@ function SessionControls() {
         Current logical session: <code>{currentSessionId || 'loading...'}</code>
       </div>
       <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
-        Storage mode: <code>{storageMode}</code>
+        Current session kind: <code>{currentSessionKind}</code>
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+        <label style={{ fontSize: 12, color: '#555' }}>
+          Storage mode:
+          <select
+            style={{ marginLeft: 8 }}
+            value={storageMode}
+            disabled={busy}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setStorageMode(nextValue);
+              void updateDemoStorageMode(nextValue as 'local' | 'remote' | 'both');
+            }}
+          >
+            <option value="local">local</option>
+            <option value="remote">remote</option>
+            <option value="both">both</option>
+          </select>
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
         <select
-          value={selectedSessionId}
-          onChange={(event) => setSelectedSessionId(event.target.value)}
+          value={selectedLocalSessionId}
+          onChange={(event) => setSelectedLocalSessionId(event.target.value)}
           disabled={busy || localSessions.length === 0}
         >
           {localSessions.map((session) => (
@@ -129,10 +176,10 @@ function SessionControls() {
           ))}
         </select>
         <button
-          disabled={busy || !selectedSessionId || selectedSessionId === currentSessionId}
+          disabled={busy || !selectedLocalSessionId || selectedLocalSessionId === currentSessionId}
           onClick={() =>
             void reloadIntoSession(async () => {
-              await selectDemoLocalSession(selectedSessionId);
+              await selectDemoLocalSession(selectedLocalSessionId);
             })
           }
         >
@@ -147,6 +194,86 @@ function SessionControls() {
           }
         >
           New Local Session
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+        <select
+          value={selectedSharedSessionId}
+          onChange={(event) => setSelectedSharedSessionId(event.target.value)}
+          disabled={busy || remoteSessions.length === 0}
+        >
+          {remoteSessions.map((session) => (
+            <option key={`shared-${session.session_id}`} value={session.session_id}>
+              {session.title ? `${session.title} (${session.session_id})` : session.session_id}
+            </option>
+          ))}
+        </select>
+        <button
+          disabled={busy || !selectedSharedSessionId}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await selectDemoRemoteSession(
+                selectedSharedSessionId,
+                'glial-shared',
+                storageMode as 'local' | 'remote' | 'both',
+              );
+            })
+          }
+        >
+          Load Glial Shared Session
+        </button>
+        <button
+          disabled={busy}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await createAndSelectNewDemoRemoteSession(
+                'glial-shared',
+                storageMode as 'local' | 'remote' | 'both',
+              );
+            })
+          }
+        >
+          New Glial Shared Session
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select
+          value={selectedStorageSessionId}
+          onChange={(event) => setSelectedStorageSessionId(event.target.value)}
+          disabled={busy || remoteSessions.length === 0}
+        >
+          {remoteSessions.map((session) => (
+            <option key={`storage-${session.session_id}`} value={session.session_id}>
+              {session.title ? `${session.title} (${session.session_id})` : session.session_id}
+            </option>
+          ))}
+        </select>
+        <button
+          disabled={busy || !selectedStorageSessionId}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await selectDemoRemoteSession(
+                selectedStorageSessionId,
+                'glial-storage',
+                storageMode as 'local' | 'remote' | 'both',
+              );
+            })
+          }
+        >
+          Load Glial Storage Session
+        </button>
+        <button
+          disabled={busy}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await createAndSelectNewDemoRemoteSession(
+                'glial-storage',
+                storageMode as 'local' | 'remote' | 'both',
+              );
+            })
+          }
+        >
+          New Glial Storage Session
         </button>
       </div>
     </div>

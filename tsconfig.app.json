@@ -18,7 +18,8 @@
     "paths": {
       "@owebeeone/grip-react": ["../grip-react/dist/index.d.ts"],
       "@owebeeone/grip-core": ["../grip-core/dist/index.d.ts"],
-      "@owebeeone/glial-local": ["../glial-local-ts/src/index.ts"]
+      "@owebeeone/glial-local": ["../glial-local-ts/src/index.ts"],
+      "@owebeeone/glial-net": ["../glial-net-ts/src/index.ts"]
     },
 
     /* Linting */

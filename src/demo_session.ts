@@ -1,4 +1,5 @@
 import {
+  type BrowserSessionKind,
   bindBrowserSessionToExistingSession,
   createBrowserSessionId,
   ensureBrowserSessionRecord,
@@ -9,6 +10,7 @@ import {
   type GripSessionStore,
   type SessionSummary,
 } from '@owebeeone/glial-local';
+import { HttpGlialClient } from '@owebeeone/glial-net';
 import {
   CALC_DISPLAY,
   COUNT,
@@ -32,14 +34,19 @@ export interface DemoBrowserSession {
   browserSessionId: string;
   glialSessionId: string;
   storageMode: BrowserSessionStorageMode;
+  sessionKind: BrowserSessionKind;
   title?: string;
   store: DemoSessionStore;
+  glialBaseUrl: string;
+  glialUserId: string;
 }
 
 export interface DemoSessionDependencies {
   store?: DemoSessionStore;
   browserStorage?: Storage;
   sessionKey?: string;
+  glialBaseUrl?: string;
+  glialUserId?: string;
 }
 
 export type DemoSessionStore = GripSessionStore & BrowserSessionRecordStore;
@@ -99,13 +106,52 @@ function getOrCreateBrowserSessionId(deps?: DemoSessionDependencies): string {
   return browserSessionId;
 }
 
-function toDemoBrowserSession(record: BrowserSessionRecord, store: DemoSessionStore): DemoBrowserSession {
+function getGlialBaseUrl(deps?: DemoSessionDependencies): string {
+  if (deps?.glialBaseUrl) {
+    return deps.glialBaseUrl.replace(/\/+$/, '');
+  }
+  const envBaseUrl =
+    typeof import.meta !== 'undefined'
+      ? (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_GLIAL_BASE_URL
+      : undefined;
+  if (envBaseUrl) {
+    return envBaseUrl.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, '');
+  }
+  return 'http://127.0.0.1:8000';
+}
+
+function getGlialUserId(deps?: DemoSessionDependencies): string {
+  if (deps?.glialUserId) {
+    return deps.glialUserId;
+  }
+  const envUserId =
+    typeof import.meta !== 'undefined'
+      ? (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_GLIAL_USER_ID
+      : undefined;
+  return envUserId ?? 'demo-user';
+}
+
+function createGlialClient(deps?: DemoSessionDependencies): HttpGlialClient {
+  return new HttpGlialClient({ baseUrl: getGlialBaseUrl(deps) });
+}
+
+function toDemoBrowserSession(
+  record: BrowserSessionRecord,
+  store: DemoSessionStore,
+  deps?: DemoSessionDependencies,
+): DemoBrowserSession {
   return {
     browserSessionId: record.browser_session_id,
     glialSessionId: record.glial_session_id,
     storageMode: record.storage_mode,
+    sessionKind: record.session_kind,
     title: record.title,
     store,
+    glialBaseUrl: getGlialBaseUrl(deps),
+    glialUserId: getGlialUserId(deps),
   };
 }
 
@@ -120,6 +166,14 @@ async function getSessionSummaryOrThrow(
   return summary;
 }
 
+async function ensureLocalShadowSession(
+  store: DemoSessionStore,
+  sessionId: string,
+  title?: string,
+): Promise<SessionSummary> {
+  return (await store.getSession(sessionId)) ?? store.newSession({ session_id: sessionId, title });
+}
+
 export async function ensureDemoBrowserSession(
   deps?: DemoSessionDependencies,
 ): Promise<DemoBrowserSession> {
@@ -128,8 +182,9 @@ export async function ensureDemoBrowserSession(
   const record = await ensureBrowserSessionRecord(store, browserSessionId, {
     title: 'Grip React Demo',
     storageMode: 'local',
+    sessionKind: 'local',
   });
-  return toDemoBrowserSession(record, store);
+  return toDemoBrowserSession(record, store, deps);
 }
 
 export async function getCurrentDemoBrowserSession(
@@ -151,8 +206,14 @@ export async function selectDemoLocalSession(
   const store = getStore(deps);
   const browserSessionId = getOrCreateBrowserSessionId(deps);
   const session = await getSessionSummaryOrThrow(store, glialSessionId);
-  const record = await bindBrowserSessionToExistingSession(store, browserSessionId, session, 'local');
-  return toDemoBrowserSession(record, store);
+  const record = await bindBrowserSessionToExistingSession(
+    store,
+    browserSessionId,
+    session,
+    'local',
+    'local',
+  );
+  return toDemoBrowserSession(record, store, deps);
 }
 
 export async function createAndSelectNewDemoLocalSession(
@@ -161,8 +222,78 @@ export async function createAndSelectNewDemoLocalSession(
   const store = getStore(deps);
   const browserSessionId = getOrCreateBrowserSessionId(deps);
   const session = await store.newSession({ title: 'Grip React Demo' });
-  const record = await bindBrowserSessionToExistingSession(store, browserSessionId, session, 'local');
-  return toDemoBrowserSession(record, store);
+  const record = await bindBrowserSessionToExistingSession(
+    store,
+    browserSessionId,
+    session,
+    'local',
+    'local',
+  );
+  return toDemoBrowserSession(record, store, deps);
+}
+
+export async function listDemoRemoteSessions(
+  deps?: DemoSessionDependencies,
+): Promise<SessionSummary[]> {
+  const client = createGlialClient(deps);
+  const sessions = await client.listRemoteSessions(getGlialUserId(deps));
+  return sessions.map((session) => ({
+    session_id: session.session_id,
+    title: session.title,
+    mode: 'shared',
+    last_modified_ms: session.last_modified_ms,
+  }));
+}
+
+export async function selectDemoRemoteSession(
+  glialSessionId: string,
+  sessionKind: Exclude<BrowserSessionKind, 'local'>,
+  storageMode: BrowserSessionStorageMode,
+  deps?: DemoSessionDependencies,
+): Promise<DemoBrowserSession> {
+  const store = getStore(deps);
+  const browserSessionId = getOrCreateBrowserSessionId(deps);
+  const client = createGlialClient(deps);
+  const remote = await client.loadRemoteSession(getGlialUserId(deps), glialSessionId);
+  await ensureLocalShadowSession(store, glialSessionId, remote.title);
+  const record: BrowserSessionRecord = {
+    browser_session_id: browserSessionId,
+    glial_session_id: remote.session_id,
+    title: remote.title,
+    storage_mode: storageMode,
+    session_kind: sessionKind,
+    last_opened_ms: Date.now(),
+  };
+  await store.putBrowserSession(record);
+  return toDemoBrowserSession(record, store, deps);
+}
+
+export async function createAndSelectNewDemoRemoteSession(
+  sessionKind: Exclude<BrowserSessionKind, 'local'>,
+  storageMode: BrowserSessionStorageMode,
+  deps?: DemoSessionDependencies,
+): Promise<DemoBrowserSession> {
+  const store = getStore(deps);
+  const browserSessionId = getOrCreateBrowserSessionId(deps);
+  const client = createGlialClient(deps);
+  const session = await store.newSession({ title: 'Grip React Demo (Glial)' });
+  const hydrated = await store.hydrate(session.session_id);
+  const remote = await client.saveRemoteSession(
+    getGlialUserId(deps),
+    session.session_id,
+    hydrated.snapshot as unknown as Record<string, unknown>,
+    session.title ?? 'Grip React Demo (Glial)',
+  );
+  const record: BrowserSessionRecord = {
+    browser_session_id: browserSessionId,
+    glial_session_id: remote.session_id,
+    title: remote.title,
+    storage_mode: storageMode,
+    session_kind: sessionKind,
+    last_opened_ms: Date.now(),
+  };
+  await store.putBrowserSession(record);
+  return toDemoBrowserSession(record, store, deps);
 }
 
 export async function updateDemoStorageMode(
@@ -174,6 +305,7 @@ export async function updateDemoStorageMode(
   const existing = await ensureBrowserSessionRecord(store, browserSessionId, {
     title: 'Grip React Demo',
     storageMode,
+    sessionKind: 'local',
   });
   const nextRecord: BrowserSessionRecord = {
     ...existing,
@@ -181,5 +313,5 @@ export async function updateDemoStorageMode(
     last_opened_ms: Date.now(),
   };
   await store.putBrowserSession(nextRecord);
-  return toDemoBrowserSession(nextRecord, store);
+  return toDemoBrowserSession(nextRecord, store, deps);
 }
