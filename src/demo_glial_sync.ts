@@ -1,5 +1,6 @@
 import {
   applyLocalPersistenceSnapshot,
+  buildSharedProjectionSnapshot,
   type Grok,
 } from '@owebeeone/grip-react';
 import { HttpGlialClient } from '@owebeeone/glial-net';
@@ -48,6 +49,7 @@ export class DemoGlialSessionSync {
   private disposed = false;
   private lastRemoteModifiedMs = 0;
   private lastAppliedSignature = '';
+  private lastSharedSignature = '';
 
   constructor(opts: DemoGlialSyncOptions) {
     this.grok = opts.grok;
@@ -63,6 +65,9 @@ export class DemoGlialSessionSync {
   async start(): Promise<void> {
     const localSnapshot = await this.readLocalSnapshot();
     this.lastAppliedSignature = stableStringify(localSnapshot);
+    if (this.sessionKind === 'glial-shared') {
+      this.lastSharedSignature = '';
+    }
     try {
       const remote = await this.client.loadRemoteSession(this.userId, this.sessionId);
       this.lastRemoteModifiedMs = remote.last_modified_ms;
@@ -82,6 +87,9 @@ export class DemoGlialSessionSync {
         this.title,
       );
       this.lastRemoteModifiedMs = saved.last_modified_ms;
+    }
+    if (this.sessionKind === 'glial-shared') {
+      await this.saveSharedSnapshot();
     }
     this.timer = setInterval(() => {
       void this.syncNow();
@@ -142,6 +150,9 @@ export class DemoGlialSessionSync {
       );
       this.lastRemoteModifiedMs = saved.last_modified_ms;
       this.lastAppliedSignature = localSignature;
+      if (this.sessionKind === 'glial-shared') {
+        await this.saveSharedSnapshot();
+      }
     } finally {
       this.syncing = false;
     }
@@ -158,5 +169,24 @@ export class DemoGlialSessionSync {
       applyLocalPersistenceSnapshot(this.grok, snapshot);
     });
     await this.store.replaceSnapshot(this.sessionId, snapshot, 'glial_resync');
+  }
+
+  private readLocalSharedSnapshot(): Record<string, unknown> {
+    return buildSharedProjectionSnapshot(this.grok, this.sessionId) as unknown as Record<string, unknown>;
+  }
+
+  private async saveSharedSnapshot(): Promise<void> {
+    const sharedSnapshot = this.readLocalSharedSnapshot();
+    const sharedSignature = stableStringify(sharedSnapshot);
+    if (sharedSignature === this.lastSharedSignature) {
+      return;
+    }
+    await this.client.saveSharedSession(
+      this.userId,
+      this.sessionId,
+      sharedSnapshot,
+      this.title,
+    );
+    this.lastSharedSignature = sharedSignature;
   }
 }
