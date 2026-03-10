@@ -7,7 +7,7 @@ import { CALC_DISPLAY } from './grips';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {
@@ -81,10 +81,6 @@ export default function App() {
   const calcDivPressed = useGrip(CALC_DIV_PRESSED);
   const calcEqualsPressed = useGrip(CALC_EQUALS_PRESSED);
   const calcClearPressed = useGrip(CALC_CLEAR_PRESSED);
-
-  useEffect(() => {
-    countTap?.set(1);
-  }, [countTap]);
 
   const inc = (c: number) => {
     if (c === undefined) {

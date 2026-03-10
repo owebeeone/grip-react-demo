@@ -14,6 +14,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@owebeeone/glial-local": ["../glial-local-ts/src/index.ts"]
+    },
 
     /* Linting */
     "strict": true,

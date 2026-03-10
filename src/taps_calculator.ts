@@ -13,11 +13,11 @@ export class CalculatorTap extends MultiAtomValueTap implements Tap {
     CALC_EQUALS_PRESSED,
     CALC_CLEAR_PRESSED,
   ];
-  constructor() {
+  constructor(initialDisplay?: string) {
     super(
       CalculatorTap.outputs,
       new Map<Grip<any>, any>([
-        [CALC_DISPLAY as Grip<any>, (CALC_DISPLAY.defaultValue ?? '0')],
+        [CALC_DISPLAY as Grip<any>, (initialDisplay ?? CALC_DISPLAY.defaultValue ?? '0')],
       ]),
       { handleGrip: undefined }
     );

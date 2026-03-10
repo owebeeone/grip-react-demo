@@ -1,18 +1,10 @@
-import { useGrip, useRuntime, useAtomValueTap } from '@owebeeone/grip-react';
-import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP, GEO_LABEL } from './grips.weather';
+import { useGrip } from '@owebeeone/grip-react';
+import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, GEO_LABEL } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
-import { useMemo } from 'react';
+import type { GripContext } from '@owebeeone/grip-react';
 
-export default function WeatherColumn(props: { title: string; initialLocation: string }) {
-	const { context: parentCtx } = useRuntime();
-	const ctx = useMemo(() => parentCtx.getGripConsumerContext().createChild(), [parentCtx]);
-
-	useAtomValueTap(WEATHER_LOCATION, {
-		ctx,
-		initial: props.initialLocation,
-		tapGrip: WEATHER_LOCATION_TAP,
-	});
-
+export default function WeatherColumn(props: { title: string; ctx: GripContext }) {
+	const ctx = props.ctx;
 	const temp = useGrip(WEATHER_TEMP_C, ctx);
 	const humidity = useGrip(WEATHER_HUMIDITY, ctx);
 	const wind = useGrip(WEATHER_WIND_SPEED, ctx);

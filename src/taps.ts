@@ -1,9 +1,10 @@
 import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory, withOneOf } from '@owebeeone/grip-react';
-import { grok } from './runtime';
+import { grok, headerWeatherContext, weatherColumnAContext, weatherColumnBContext } from './runtime';
 import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP, WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
-import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION } from './grips.weather';
+import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips.weather';
 import { createLocationToGeoTap, METEO_TAP_FACTORY } from './openmeteo_taps';
 import { CalculatorTap } from './taps_calculator';
+import { DEFAULT_DEMO_STATE, type DemoPersistedState } from './demo_session';
 
 // Calculator tap factory - just because we can. This would work fine as a tap instance
 // but as a tap factory in theory we could add it in multiple places and it would
@@ -12,12 +13,16 @@ class CalcTapFactory implements TapFactory {
   readonly kind: 'TapFactory' = 'TapFactory';
   readonly provides = CalculatorTap.outputs;
   readonly key: TapFactory = this;
+  private readonly initialDisplay?: string;
+
+  constructor(initialDisplay?: string) {
+    this.initialDisplay = initialDisplay;
+  }
 
   build() {
-    return new CalculatorTap();
+    return new CalculatorTap(this.initialDisplay);
   }
 }
-export const CalcTap = new CalcTapFactory();
 
 // Time tick: publish current time every second
 class TimeTap extends BaseTap implements Tap {
@@ -57,17 +62,6 @@ class TimeTap extends BaseTap implements Tap {
   produceOnDestParams(): void {}
 }
 export const TickTap: Tap = new TimeTap() as unknown as Tap;
-
-// Counter & Tab taps via simple taps
-export const CounterTap: Tap = createAtomValueTap(
-  COUNT, 
-  { initial: COUNT.defaultValue ?? 0, handleGrip: COUNT_TAP }) as unknown as Tap;
-export const TabTap: Tap = createAtomValueTap(
-    CURRENT_TAB, 
-    { initial: CURRENT_TAB.defaultValue ?? 'clock', handleGrip: CURRENT_TAB_TAP });
-export const WeatherProviderTap: Tap = createAtomValueTap(
-  WEATHER_PROVIDER_NAME, 
-  { initial: WEATHER_PROVIDER_NAME.defaultValue ?? 'meteo', handleGrip: WEATHER_PROVIDER_NAME_TAP });
 
 
 // Weather tap driven by BaseTap. Reads WEATHER_LOCATION per-destination and publishes derived values.
@@ -143,12 +137,50 @@ class WeatherTapImpl extends BaseTap implements Tap {
 export const WeatherTap: Tap = new WeatherTapImpl() as unknown as Tap;
 
 // Registration helper
-export function registerAllTaps() {
+export function registerAllTaps(initialState?: Partial<DemoPersistedState>) {
+  const state: DemoPersistedState = {
+    ...DEFAULT_DEMO_STATE,
+    ...initialState,
+    weatherLocations: {
+      ...DEFAULT_DEMO_STATE.weatherLocations,
+      ...(initialState?.weatherLocations ?? {}),
+    },
+  };
+
+  const counterTap: Tap = createAtomValueTap(
+    COUNT,
+    { initial: state.count, handleGrip: COUNT_TAP },
+  ) as unknown as Tap;
+  const tabTap: Tap = createAtomValueTap(
+    CURRENT_TAB,
+    { initial: state.currentTab, handleGrip: CURRENT_TAB_TAP },
+  );
+  const calcTap = new CalcTapFactory(state.calcDisplay);
+  const weatherProviderTap: Tap = createAtomValueTap(
+    WEATHER_PROVIDER_NAME,
+    { initial: state.weatherProvider, handleGrip: WEATHER_PROVIDER_NAME_TAP },
+  );
+  const headerLocationTap: Tap = createAtomValueTap(
+    WEATHER_LOCATION,
+    { initial: state.weatherLocations.header },
+  ) as unknown as Tap;
+  const weatherColumnATap: Tap = createAtomValueTap(
+    WEATHER_LOCATION,
+    { initial: state.weatherLocations.columnA, handleGrip: WEATHER_LOCATION_TAP },
+  ) as unknown as Tap;
+  const weatherColumnBTap: Tap = createAtomValueTap(
+    WEATHER_LOCATION,
+    { initial: state.weatherLocations.columnB, handleGrip: WEATHER_LOCATION_TAP },
+  ) as unknown as Tap;
+
   grok.registerTap(TickTap);
-  grok.registerTap(CounterTap);
-  grok.registerTap(TabTap);
-  grok.registerTap(CalcTap);
-  grok.registerTap(WeatherProviderTap);
+  grok.registerTap(counterTap);
+  grok.registerTap(tabTap);
+  grok.registerTap(calcTap);
+  grok.registerTap(weatherProviderTap);
+  headerWeatherContext.registerTap(headerLocationTap);
+  weatherColumnAContext.registerTap(weatherColumnATap);
+  weatherColumnBContext.registerTap(weatherColumnBTap);
   // Register live OpenMeteo taps at main so any context can resolve live data
   grok.registerTap(createLocationToGeoTap());
   // grok.registerTap(createOpenMeteoWeatherTap());
