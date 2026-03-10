@@ -4,7 +4,6 @@ import { grok, main } from './runtime';
 import { registerAllTaps } from './taps';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import SessionPersistenceBridge from './SessionPersistenceBridge';
 import { ensureDemoBrowserSession } from './demo_session';
 
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
@@ -16,12 +15,28 @@ import { ensureDemoBrowserSession } from './demo_session';
 
 async function bootstrap() {
   const browserSession = await ensureDemoBrowserSession();
-  registerAllTaps(browserSession.state);
+  registerAllTaps();
+  await grok.attachLocalPersistence({
+    sessionId: browserSession.glialSessionId,
+    title: 'Grip React Demo',
+    store: browserSession.store,
+    flushDelayMs: 250,
+  });
+
+  const flushPersistence = () => {
+    void grok.flushLocalPersistence();
+  };
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      flushPersistence();
+    }
+  };
+  window.addEventListener('pagehide', flushPersistence);
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   const root = ReactDOM.createRoot(document.getElementById('root')!);
   const app = (
     <GripProvider grok={grok} context={main}>
-      <SessionPersistenceBridge sessionId={browserSession.sessionId} />
       <App />
     </GripProvider>
   );

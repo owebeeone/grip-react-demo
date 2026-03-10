@@ -1,8 +1,8 @@
-import { useGrip } from '@owebeeone/grip-react';
+import { useChildContext, useGrip } from '@owebeeone/grip-react';
 import { WEATHER_TEMP_C } from './grips.weather';
-import { headerWeatherContext } from './runtime';
 
 export default function AppHeader() {
+  const headerWeatherContext = useChildContext('header-weather');
   const tempSydney = useGrip(WEATHER_TEMP_C, headerWeatherContext) as number;
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>

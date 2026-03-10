@@ -2,7 +2,6 @@ import { useGrip } from '@owebeeone/grip-react';
 import { WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
 import WeatherColumn from './WeatherColumn';
 import './App.css';
-import { weatherColumnAContext, weatherColumnBContext } from './runtime';
 
 export default function WeatherPanel() {
   const weatherProvider = useGrip(WEATHER_PROVIDER_NAME);
@@ -33,8 +32,8 @@ export default function WeatherPanel() {
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-        <WeatherColumn title="Location A" ctx={weatherColumnAContext} />
-        <WeatherColumn title="Location B" ctx={weatherColumnBContext} />
+        <WeatherColumn title="Location A" contextName="weather-column-a" />
+        <WeatherColumn title="Location B" contextName="weather-column-b" />
       </div>
     </div>
   );

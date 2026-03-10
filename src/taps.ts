@@ -1,5 +1,5 @@
 import { type Tap, createAtomValueTap, BaseTap, Grip, type TapFactory, withOneOf } from '@owebeeone/grip-react';
-import { grok, headerWeatherContext, weatherColumnAContext, weatherColumnBContext } from './runtime';
+import { grok } from './runtime';
 import { CURRENT_TIME, COUNT, CURRENT_TAB, COUNT_TAP, CURRENT_TAB_TAP, WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips.weather';
 import { createLocationToGeoTap, METEO_TAP_FACTORY } from './openmeteo_taps';
@@ -172,6 +172,9 @@ export function registerAllTaps(initialState?: Partial<DemoPersistedState>) {
     WEATHER_LOCATION,
     { initial: state.weatherLocations.columnB, handleGrip: WEATHER_LOCATION_TAP },
   ) as unknown as Tap;
+  const headerWeatherContext = grok.mainPresentationContext.getOrCreateChild('header-weather');
+  const weatherColumnAContext = grok.mainPresentationContext.getOrCreateChild('weather-column-a');
+  const weatherColumnBContext = grok.mainPresentationContext.getOrCreateChild('weather-column-b');
 
   grok.registerTap(TickTap);
   grok.registerTap(counterTap);

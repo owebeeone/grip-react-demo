@@ -6,9 +6,13 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@owebeeone/grip-react': path.resolve(__dirname, '../grip-react/dist/index.mjs'),
+      '@owebeeone/grip-core': path.resolve(__dirname, '../grip-core/dist/index.mjs'),
       '@owebeeone/glial-local': path.resolve(__dirname, '../glial-local-ts/src/index.ts'),
     },
     dedupe: ['react', 'react-dom'],
   },
-  optimizeDeps: { exclude: ['@owebeeone/grip-react', '@owebeeone/glial-local'] }
+  optimizeDeps: {
+    exclude: ['@owebeeone/grip-react', '@owebeeone/grip-core', '@owebeeone/glial-local'],
+  },
 })

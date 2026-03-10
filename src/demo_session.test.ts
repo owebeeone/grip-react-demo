@@ -4,26 +4,28 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { IndexedDbGripSessionStore } from '@owebeeone/glial-local';
 import {
+  createAndSelectNewDemoLocalSession,
   DEFAULT_DEMO_STATE,
-  buildDemoSessionSnapshot,
   ensureDemoBrowserSession,
-  extractDemoSessionState,
-  saveDemoBrowserSessionState,
-  type DemoPersistedState,
+  listDemoLocalSessions,
+  selectDemoLocalSession,
 } from './demo_session';
-import { COUNT } from './grips';
-import { WEATHER_LOCATION } from './grips.weather';
 
-describe('demo session persistence', () => {
+function createStore() {
+  return new IndexedDbGripSessionStore({
+    databaseName: `grip-react-demo-test-${crypto.randomUUID()}`,
+    objectStoreName: 'sessions',
+    browserSessionStoreName: 'browser_sessions',
+  });
+}
+
+describe('demo browser session', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
   });
 
-  it('round-trips a full persisted demo state through the local store', async () => {
-    const store = new IndexedDbGripSessionStore({
-      databaseName: `grip-react-demo-test-${crypto.randomUUID()}`,
-      objectStoreName: 'sessions',
-    });
+  it('creates and reuses a stable browser session record', async () => {
+    const store = createStore();
     const sessionKey = 'demo-session-test-key';
 
     const initial = await ensureDemoBrowserSession({
@@ -31,45 +33,39 @@ describe('demo session persistence', () => {
       browserStorage: window.sessionStorage,
       sessionKey,
     });
-
-    expect(initial.state).toEqual(DEFAULT_DEMO_STATE);
-
-    const updatedState: DemoPersistedState = {
-      count: 9,
-      currentTab: 'weather',
-      weatherProvider: 'mock',
-      calcDisplay: '42/7',
-      weatherLocations: {
-        header: 'Perth',
-        columnA: 'Paris',
-        columnB: 'Melbourne',
-      },
-    };
-
-    await saveDemoBrowserSessionState(initial.sessionId, updatedState, {
-      store,
-      browserStorage: window.sessionStorage,
-      sessionKey,
-    });
-
     const restored = await ensureDemoBrowserSession({
       store,
       browserStorage: window.sessionStorage,
       sessionKey,
     });
 
-    expect(restored.sessionId).toBe(initial.sessionId);
-    expect(restored.state).toEqual(updatedState);
+    expect(restored.browserSessionId).toBe(initial.browserSessionId);
+    expect(restored.glialSessionId).toBe(initial.glialSessionId);
+    expect(restored.store).toBe(store);
   });
 
-  it('extracts defaults when a snapshot is missing fields', () => {
-    const snapshot = buildDemoSessionSnapshot(DEFAULT_DEMO_STATE);
-    delete snapshot.contexts['main-presentation'].drips[COUNT.key];
-    delete snapshot.contexts['demo-weather-column-b'].drips[WEATHER_LOCATION.key];
+  it('lists and switches local sessions through the browser-session record', async () => {
+    const store = createStore();
+    const deps = {
+      store,
+      browserStorage: window.sessionStorage,
+      sessionKey: 'demo-session-switch-test',
+    };
 
-    const restored = extractDemoSessionState(snapshot);
+    const current = await ensureDemoBrowserSession(deps);
+    const created = await createAndSelectNewDemoLocalSession(deps);
+    const sessions = await listDemoLocalSessions(deps);
 
-    expect(restored.count).toBe(DEFAULT_DEMO_STATE.count);
-    expect(restored.weatherLocations.columnB).toBe(DEFAULT_DEMO_STATE.weatherLocations.columnB);
+    expect(sessions.map((session) => session.session_id)).toContain(current.glialSessionId);
+    expect(sessions.map((session) => session.session_id)).toContain(created.glialSessionId);
+
+    const switched = await selectDemoLocalSession(current.glialSessionId, deps);
+    expect(switched.glialSessionId).toBe(current.glialSessionId);
+    expect(switched.browserSessionId).toBe(current.browserSessionId);
+  });
+
+  it('keeps the demo defaults available for tap registration', () => {
+    expect(DEFAULT_DEMO_STATE.currentTab).toBe('clock');
+    expect(DEFAULT_DEMO_STATE.weatherLocations.columnB).toBe('San Jose');
   });
 });

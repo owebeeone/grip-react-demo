@@ -1,10 +1,12 @@
-import { useGrip } from '@owebeeone/grip-react';
+import { useChildContext, useGrip } from '@owebeeone/grip-react';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, GEO_LABEL } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
-import type { GripContext } from '@owebeeone/grip-react';
 
-export default function WeatherColumn(props: { title: string; ctx: GripContext }) {
-	const ctx = props.ctx;
+export default function WeatherColumn(props: { title: string; contextName: string }) {
+	// Resolve the context from the current provider using a stable local name.
+	// Importing a context instance from another module couples this component to
+	// external runtime wiring and breaks deterministic context identity.
+	const ctx = useChildContext(props.contextName);
 	const temp = useGrip(WEATHER_TEMP_C, ctx);
 	const humidity = useGrip(WEATHER_HUMIDITY, ctx);
 	const wind = useGrip(WEATHER_WIND_SPEED, ctx);

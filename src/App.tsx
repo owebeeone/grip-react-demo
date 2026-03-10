@@ -7,8 +7,19 @@ import { CALC_DISPLAY } from './grips';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import {
+  createAndSelectNewDemoLocalSession,
+  getCurrentDemoBrowserSession,
+  listDemoLocalSessions,
+  selectDemoLocalSession,
+} from './demo_session';
+
+interface SessionOption {
+  session_id: string;
+  title?: string;
+}
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {
   const { grok } = useRuntime();
@@ -59,11 +70,94 @@ function ResizableGraphWrapper(props: { children: React.ReactNode }) {
   );
 }
 
+function SessionControls() {
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [storageMode, setStorageMode] = useState<string>('local');
+  const [localSessions, setLocalSessions] = useState<SessionOption[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const [current, sessions] = await Promise.all([
+        getCurrentDemoBrowserSession(),
+        listDemoLocalSessions(),
+      ]);
+      if (cancelled) {
+        return;
+      }
+      setCurrentSessionId(current.glialSessionId);
+      setStorageMode(current.storageMode);
+      setLocalSessions(sessions);
+      setSelectedSessionId(current.glialSessionId);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const reloadIntoSession = async (action: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await action();
+      window.location.reload();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 16, padding: 12, border: '1px solid #ddd', borderRadius: 8 }}>
+      <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
+        Current logical session: <code>{currentSessionId || 'loading...'}</code>
+      </div>
+      <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
+        Storage mode: <code>{storageMode}</code>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select
+          value={selectedSessionId}
+          onChange={(event) => setSelectedSessionId(event.target.value)}
+          disabled={busy || localSessions.length === 0}
+        >
+          {localSessions.map((session) => (
+            <option key={session.session_id} value={session.session_id}>
+              {session.title ? `${session.title} (${session.session_id})` : session.session_id}
+            </option>
+          ))}
+        </select>
+        <button
+          disabled={busy || !selectedSessionId || selectedSessionId === currentSessionId}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await selectDemoLocalSession(selectedSessionId);
+            })
+          }
+        >
+          Load Local Session
+        </button>
+        <button
+          disabled={busy}
+          onClick={() =>
+            void reloadIntoSession(async () => {
+              await createAndSelectNewDemoLocalSession();
+            })
+          }
+        >
+          New Local Session
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const pageSize = useGrip(PAGE_SIZE);        // 50 (root override)
 
   // Child context: override DESCRIPTION locally (row-like)
-  const rowCtx = useChildContext();
+  const rowCtx = useChildContext('app-row');
   const desc = useGrip(DESCRIPTION, rowCtx);
   const count = useGrip(COUNT); // produced by CounterTap
   const countTap = useGrip(COUNT_TAP);
@@ -98,6 +192,7 @@ export default function App() {
 
   const mainContent = (
     <div style={{ padding: 16 }}>
+      <SessionControls />
       <AppHeader />
       <TabBar />
 
