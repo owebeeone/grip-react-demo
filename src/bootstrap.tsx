@@ -4,7 +4,7 @@ import { grok, main } from './runtime';
 import { registerAllTaps } from './taps';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { ensureDemoBrowserSession } from './demo_session';
+import { prepareDemoBrowserSessionForBootstrap } from './demo_session';
 import { DemoGlialSessionSync } from './demo_glial_sync';
 
 // Toggle StrictMode with Vite env var: VITE_STRICT_MODE=true|false
@@ -15,7 +15,7 @@ import { DemoGlialSessionSync } from './demo_glial_sync';
 // const USE_STRICT_MODE = (import.meta as any).env?.VITE_STRICT_MODE === 'true';
 
 async function bootstrap() {
-  const browserSession = await ensureDemoBrowserSession();
+  const browserSession = await prepareDemoBrowserSessionForBootstrap();
   registerAllTaps();
   await grok.attachLocalPersistence({
     sessionId: browserSession.glialSessionId,

@@ -7,6 +7,38 @@ import { HttpGlialClient } from '@owebeeone/glial-net';
 import type { SessionSnapshot } from '@owebeeone/glial-local';
 import type { DemoSessionStore } from './demo_session';
 
+export interface DemoGlialSyncClient {
+  loadRemoteSession(userId: string, sessionId: string): Promise<{
+    session_id: string;
+    title?: string;
+    snapshot: Record<string, unknown>;
+    last_modified_ms: number;
+  }>;
+  saveRemoteSession(
+    userId: string,
+    sessionId: string,
+    snapshot: Record<string, unknown>,
+    title?: string,
+  ): Promise<{
+    session_id: string;
+    title?: string;
+    snapshot: Record<string, unknown>;
+    last_modified_ms: number;
+  }>;
+  saveSharedSession(
+    userId: string,
+    sessionId: string,
+    snapshot: Record<string, unknown>,
+    title?: string,
+  ): Promise<{
+    session_id: string;
+    title?: string;
+    snapshot: Record<string, unknown>;
+    leases: Record<string, Record<string, unknown>>;
+    last_modified_ms: number;
+  }>;
+}
+
 export interface DemoGlialSyncOptions {
   grok: Grok;
   store: DemoSessionStore;
@@ -16,6 +48,10 @@ export interface DemoGlialSyncOptions {
   userId: string;
   sessionKind: 'glial-storage' | 'glial-shared';
   pollIntervalMs?: number;
+  remotePollMinMs?: number;
+  remotePollMaxMs?: number;
+  client?: DemoGlialSyncClient;
+  nowMs?: () => number;
 }
 
 function stableStringify(value: unknown): string {
@@ -39,10 +75,13 @@ export class DemoGlialSessionSync {
   private readonly store: DemoSessionStore;
   private readonly sessionId: string;
   private readonly title?: string;
-  private readonly client: HttpGlialClient;
+  private readonly client: DemoGlialSyncClient;
   private readonly userId: string;
   private readonly sessionKind: 'glial-storage' | 'glial-shared';
   private readonly pollIntervalMs: number;
+  private readonly remotePollMinMs: number;
+  private readonly remotePollMaxMs: number;
+  private readonly nowMs: () => number;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private syncing = false;
@@ -50,16 +89,22 @@ export class DemoGlialSessionSync {
   private lastRemoteModifiedMs = 0;
   private lastAppliedSignature = '';
   private lastSharedSignature = '';
+  private nextRemotePollAtMs = 0;
+  private currentRemotePollMs = 0;
 
   constructor(opts: DemoGlialSyncOptions) {
     this.grok = opts.grok;
     this.store = opts.store;
     this.sessionId = opts.sessionId;
     this.title = opts.title;
-    this.client = new HttpGlialClient({ baseUrl: opts.baseUrl });
+    this.client = opts.client ?? new HttpGlialClient({ baseUrl: opts.baseUrl });
     this.userId = opts.userId;
     this.sessionKind = opts.sessionKind;
     this.pollIntervalMs = opts.pollIntervalMs ?? 750;
+    this.remotePollMinMs = opts.remotePollMinMs ?? this.pollIntervalMs;
+    this.remotePollMaxMs = opts.remotePollMaxMs ?? Math.max(this.remotePollMinMs, 5_000);
+    this.nowMs = opts.nowMs ?? (() => Date.now());
+    this.currentRemotePollMs = this.remotePollMinMs;
   }
 
   async start(): Promise<void> {
@@ -76,6 +121,7 @@ export class DemoGlialSessionSync {
         await this.applyRemoteSnapshot(coerceSnapshot(remote.snapshot));
         this.lastAppliedSignature = remoteSignature;
       }
+      this.resetRemotePollBackoff();
     } catch (error) {
       if (!isMissingRemoteSessionError(error)) {
         throw error;
@@ -87,6 +133,7 @@ export class DemoGlialSessionSync {
         this.title,
       );
       this.lastRemoteModifiedMs = saved.last_modified_ms;
+      this.resetRemotePollBackoff();
     }
     if (this.sessionKind === 'glial-shared') {
       await this.saveSharedSnapshot();
@@ -114,10 +161,11 @@ export class DemoGlialSessionSync {
     }
     this.syncing = true;
     try {
-      let localSnapshot = await this.readLocalSnapshot();
-      let localSignature = stableStringify(localSnapshot);
+      const localSnapshot = await this.readLocalSnapshot();
+      const localSignature = stableStringify(localSnapshot);
+      const hasUnsyncedLocalChanges = localSignature !== this.lastAppliedSignature;
 
-      if (this.sessionKind === 'glial-shared') {
+      if (this.sessionKind === 'glial-shared' && !hasUnsyncedLocalChanges && this.shouldPollRemote()) {
         try {
           const remote = await this.client.loadRemoteSession(this.userId, this.sessionId);
           const remoteSignature = stableStringify(remote.snapshot);
@@ -128,17 +176,20 @@ export class DemoGlialSessionSync {
             await this.applyRemoteSnapshot(coerceSnapshot(remote.snapshot));
             this.lastRemoteModifiedMs = remote.last_modified_ms;
             this.lastAppliedSignature = remoteSignature;
+            this.resetRemotePollBackoff();
             return;
           }
           this.lastRemoteModifiedMs = Math.max(this.lastRemoteModifiedMs, remote.last_modified_ms);
+          this.bumpRemotePollBackoff();
         } catch (error) {
           if (!isMissingRemoteSessionError(error)) {
             throw error;
           }
+          this.resetRemotePollBackoff();
         }
       }
 
-      if (localSignature === this.lastAppliedSignature) {
+      if (!hasUnsyncedLocalChanges) {
         return;
       }
 
@@ -150,6 +201,7 @@ export class DemoGlialSessionSync {
       );
       this.lastRemoteModifiedMs = saved.last_modified_ms;
       this.lastAppliedSignature = localSignature;
+      this.resetRemotePollBackoff();
       if (this.sessionKind === 'glial-shared') {
         await this.saveSharedSnapshot();
       }
@@ -169,6 +221,20 @@ export class DemoGlialSessionSync {
       applyLocalPersistenceSnapshot(this.grok, snapshot);
     });
     await this.store.replaceSnapshot(this.sessionId, snapshot, 'glial_resync');
+  }
+
+  private shouldPollRemote(): boolean {
+    return this.nowMs() >= this.nextRemotePollAtMs;
+  }
+
+  private resetRemotePollBackoff(): void {
+    this.currentRemotePollMs = this.remotePollMinMs;
+    this.nextRemotePollAtMs = this.nowMs() + this.currentRemotePollMs;
+  }
+
+  private bumpRemotePollBackoff(): void {
+    this.currentRemotePollMs = Math.min(this.remotePollMaxMs, this.currentRemotePollMs * 2);
+    this.nextRemotePollAtMs = this.nowMs() + this.currentRemotePollMs;
   }
 
   private readLocalSharedSnapshot(): Record<string, unknown> {

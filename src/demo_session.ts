@@ -47,6 +47,7 @@ export interface DemoSessionDependencies {
   sessionKey?: string;
   glialBaseUrl?: string;
   glialUserId?: string;
+  fetchImpl?: typeof fetch;
 }
 
 export type DemoSessionStore = GripSessionStore & BrowserSessionRecordStore;
@@ -135,7 +136,10 @@ function getGlialUserId(deps?: DemoSessionDependencies): string {
 }
 
 function createGlialClient(deps?: DemoSessionDependencies): HttpGlialClient {
-  return new HttpGlialClient({ baseUrl: getGlialBaseUrl(deps) });
+  return new HttpGlialClient({
+    baseUrl: getGlialBaseUrl(deps),
+    fetchImpl: deps?.fetchImpl,
+  });
 }
 
 function toDemoBrowserSession(
@@ -185,6 +189,45 @@ export async function ensureDemoBrowserSession(
     sessionKind: 'local',
   });
   return toDemoBrowserSession(record, store, deps);
+}
+
+async function downgradeDemoBrowserSessionToLocal(
+  browserSession: DemoBrowserSession,
+  deps?: DemoSessionDependencies,
+): Promise<DemoBrowserSession> {
+  const store = getStore(deps);
+  const localSession =
+    (await store.getSession(browserSession.glialSessionId)) ??
+    (await store.newSession({
+      session_id: browserSession.glialSessionId,
+      title: browserSession.title ?? 'Grip React Demo',
+    }));
+  const record = await bindBrowserSessionToExistingSession(
+    store,
+    browserSession.browserSessionId,
+    localSession,
+    'local',
+    'local',
+  );
+  return toDemoBrowserSession(record, store, deps);
+}
+
+export async function prepareDemoBrowserSessionForBootstrap(
+  deps?: DemoSessionDependencies,
+): Promise<DemoBrowserSession> {
+  const browserSession = await ensureDemoBrowserSession(deps);
+  if (browserSession.sessionKind === 'local') {
+    return browserSession;
+  }
+  try {
+    await createGlialClient(deps).loadRemoteSession(
+      browserSession.glialUserId,
+      browserSession.glialSessionId,
+    );
+    return browserSession;
+  } catch {
+    return downgradeDemoBrowserSessionToLocal(browserSession, deps);
+  }
 }
 
 export async function getCurrentDemoBrowserSession(
@@ -243,6 +286,17 @@ export async function listDemoRemoteSessions(
     mode: 'shared',
     last_modified_ms: session.last_modified_ms,
   }));
+}
+
+export async function probeDemoGlialAvailability(
+  deps?: DemoSessionDependencies,
+): Promise<boolean> {
+  try {
+    await listDemoRemoteSessions(deps);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function selectDemoRemoteSession(

@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IndexedDbGripSessionStore } from '@owebeeone/glial-local';
 import {
   createAndSelectNewDemoLocalSession,
   DEFAULT_DEMO_STATE,
   ensureDemoBrowserSession,
   listDemoLocalSessions,
+  prepareDemoBrowserSessionForBootstrap,
   selectDemoLocalSession,
 } from './demo_session';
 
@@ -67,5 +68,35 @@ describe('demo browser session', () => {
   it('keeps the demo defaults available for tap registration', () => {
     expect(DEFAULT_DEMO_STATE.currentTab).toBe('clock');
     expect(DEFAULT_DEMO_STATE.weatherLocations.columnB).toBe('San Jose');
+  });
+
+  it('downgrades a persisted Glial session to local during bootstrap when Glial is unavailable', async () => {
+    const store = createStore();
+    const deps = {
+      store,
+      browserStorage: window.sessionStorage,
+      sessionKey: 'demo-session-bootstrap-fallback',
+      fetchImpl: vi.fn(async () => {
+        throw new Error('offline');
+      }) as typeof fetch,
+    };
+
+    const current = await ensureDemoBrowserSession(deps);
+    await store.putBrowserSession({
+      browser_session_id: current.browserSessionId,
+      glial_session_id: current.glialSessionId,
+      title: current.title,
+      storage_mode: 'remote',
+      session_kind: 'glial-shared',
+      last_opened_ms: Date.now(),
+    });
+
+    const restored = await prepareDemoBrowserSessionForBootstrap(deps);
+    const record = await store.getBrowserSession(current.browserSessionId);
+
+    expect(restored.sessionKind).toBe('local');
+    expect(restored.glialSessionId).toBe(current.glialSessionId);
+    expect(record?.session_kind).toBe('local');
+    expect(record?.storage_mode).toBe('local');
   });
 });

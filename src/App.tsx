@@ -83,15 +83,18 @@ function SessionControls() {
   const [selectedLocalSessionId, setSelectedLocalSessionId] = useState<string>('');
   const [selectedSharedSessionId, setSelectedSharedSessionId] = useState<string>('');
   const [selectedStorageSessionId, setSelectedStorageSessionId] = useState<string>('');
+  const [glialAvailable, setGlialAvailable] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const [current, sessions, remote] = await Promise.all([
+      const remote = await listDemoRemoteSessions()
+        .then((sessions) => ({ sessions, available: true }))
+        .catch(() => ({ sessions: [] as SessionOption[], available: false }));
+      const [current, sessions] = await Promise.all([
         getCurrentDemoBrowserSession(),
         listDemoLocalSessions(),
-        listDemoRemoteSessions().catch(() => []),
       ]);
       if (cancelled) {
         return;
@@ -100,16 +103,29 @@ function SessionControls() {
       setCurrentSessionKind(current.sessionKind);
       setStorageMode(current.storageMode);
       setLocalSessions(sessions);
-      setRemoteSessions(remote);
+      setRemoteSessions(remote.sessions);
+      setGlialAvailable(remote.available);
+      if (!remote.available && current.storageMode !== 'local') {
+        setStorageMode('local');
+        void updateDemoStorageMode('local');
+      }
       setSelectedLocalSessionId(current.glialSessionId);
-      setSelectedSharedSessionId(remote[0]?.session_id ?? '');
-      setSelectedStorageSessionId(remote[0]?.session_id ?? '');
+      setSelectedSharedSessionId(remote.sessions[0]?.session_id ?? '');
+      setSelectedStorageSessionId(remote.sessions[0]?.session_id ?? '');
     };
     void load();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (glialAvailable !== false || storageMode === 'local') {
+      return;
+    }
+    setStorageMode('local');
+    void updateDemoStorageMode('local');
+  }, [glialAvailable, storageMode]);
 
   useEffect(() => {
     setSelectedSharedSessionId((current) => {
@@ -136,6 +152,10 @@ function SessionControls() {
     }
   };
 
+  const canUseGlial = glialAvailable === true;
+  const effectiveStorageMode =
+    canUseGlial ? storageMode : 'local';
+
   return (
     <div style={{ marginBottom: 16, padding: 12, border: '1px solid #ddd', borderRadius: 8 }}>
       <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
@@ -144,13 +164,18 @@ function SessionControls() {
       <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
         Current session kind: <code>{currentSessionKind}</code>
       </div>
+      {glialAvailable === false && (
+        <div style={{ fontSize: 12, color: '#8a3b12', marginBottom: 8 }}>
+          Glial server unavailable. Remote session controls are disabled; local mode still works.
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
         <label style={{ fontSize: 12, color: '#555' }}>
           Storage mode:
           <select
             style={{ marginLeft: 8 }}
-            value={storageMode}
-            disabled={busy}
+            value={effectiveStorageMode}
+            disabled={busy || !canUseGlial}
             onChange={(event) => {
               const nextValue = event.target.value;
               setStorageMode(nextValue);
@@ -200,7 +225,7 @@ function SessionControls() {
         <select
           value={selectedSharedSessionId}
           onChange={(event) => setSelectedSharedSessionId(event.target.value)}
-          disabled={busy || remoteSessions.length === 0}
+          disabled={busy || !canUseGlial || remoteSessions.length === 0}
         >
           {remoteSessions.map((session) => (
             <option key={`shared-${session.session_id}`} value={session.session_id}>
@@ -209,13 +234,13 @@ function SessionControls() {
           ))}
         </select>
         <button
-          disabled={busy || !selectedSharedSessionId}
+          disabled={busy || !canUseGlial || !selectedSharedSessionId}
           onClick={() =>
             void reloadIntoSession(async () => {
               await selectDemoRemoteSession(
                 selectedSharedSessionId,
                 'glial-shared',
-                storageMode as 'local' | 'remote' | 'both',
+                effectiveStorageMode as 'local' | 'remote' | 'both',
               );
             })
           }
@@ -223,12 +248,12 @@ function SessionControls() {
           Load Glial Shared Session
         </button>
         <button
-          disabled={busy}
+          disabled={busy || !canUseGlial}
           onClick={() =>
             void reloadIntoSession(async () => {
               await createAndSelectNewDemoRemoteSession(
                 'glial-shared',
-                storageMode as 'local' | 'remote' | 'both',
+                effectiveStorageMode as 'local' | 'remote' | 'both',
               );
             })
           }
@@ -240,7 +265,7 @@ function SessionControls() {
         <select
           value={selectedStorageSessionId}
           onChange={(event) => setSelectedStorageSessionId(event.target.value)}
-          disabled={busy || remoteSessions.length === 0}
+          disabled={busy || !canUseGlial || remoteSessions.length === 0}
         >
           {remoteSessions.map((session) => (
             <option key={`storage-${session.session_id}`} value={session.session_id}>
@@ -249,13 +274,13 @@ function SessionControls() {
           ))}
         </select>
         <button
-          disabled={busy || !selectedStorageSessionId}
+          disabled={busy || !canUseGlial || !selectedStorageSessionId}
           onClick={() =>
             void reloadIntoSession(async () => {
               await selectDemoRemoteSession(
                 selectedStorageSessionId,
                 'glial-storage',
-                storageMode as 'local' | 'remote' | 'both',
+                effectiveStorageMode as 'local' | 'remote' | 'both',
               );
             })
           }
@@ -263,12 +288,12 @@ function SessionControls() {
           Load Glial Storage Session
         </button>
         <button
-          disabled={busy}
+          disabled={busy || !canUseGlial}
           onClick={() =>
             void reloadIntoSession(async () => {
               await createAndSelectNewDemoRemoteSession(
                 'glial-storage',
-                storageMode as 'local' | 'remote' | 'both',
+                effectiveStorageMode as 'local' | 'remote' | 'both',
               );
             })
           }

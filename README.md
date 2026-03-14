@@ -34,6 +34,8 @@ npm run dev
 
 The application will be available at `http://localhost:5173` (or the next available port).
 
+This runs fine in plain Vite local mode with no Glial server. Glial-backed session browsing and shared/storage modes are optional and only light up when a Glial router is reachable via `VITE_GLIAL_BASE_URL` (or the current origin if you are serving through the router).
+
 ### Build
 
 ```bash
