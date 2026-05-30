@@ -2,7 +2,7 @@ import { useGrip } from '@owebeeone/grip-react';
 import { CURRENT_TAB, CURRENT_TAB_TAP } from './grips';
 
 export default function TabBar() {
-  const tab = useGrip(CURRENT_TAB) as 'clock' | 'calc' | 'weather';
+  const tab = useGrip(CURRENT_TAB) as 'clock' | 'calc' | 'weather' | 'coins';
   const tabTap = useGrip(CURRENT_TAB_TAP);
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -14,6 +14,9 @@ export default function TabBar() {
       </button>
       <button onClick={() => tabTap?.set('weather')} disabled={tab === 'weather'}>
         Weather
+      </button>
+      <button onClick={() => tabTap?.set('coins')} disabled={tab === 'coins'}>
+        Coins
       </button>
     </div>
   );

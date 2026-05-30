@@ -7,6 +7,7 @@ import { CALC_DISPLAY } from './grips';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
+import CoinPanel from './CoinPanel';
 import React, { useState, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
@@ -141,6 +142,8 @@ export default function App() {
       )}
 
       {tab === 'weather' && <WeatherPanel />}
+
+      {tab === 'coins' && <CoinPanel />}
     </div>
   );
 
