@@ -5,7 +5,7 @@ import {
   withOneOf,
   type MatchingContext,
 } from '@owebeeone/grip-react';
-import { MOCK_COIN_TAP_FACTORY } from './cointaps';
+import { BINANCE_TAP_FACTORY, COINBASE_TAP_FACTORY, MOCK_COIN_TAP_FACTORY } from './cointaps';
 import {
   COIN_EXCHANGE,
   COIN_PRICE_USD,
@@ -26,6 +26,18 @@ function initCoinMatcher(ctx: MatchingContext): void {
     id: 'mock-coin',
     query: withOneOf(COIN_SOURCE, 'mock', 10).build(),
     tap: MOCK_COIN_TAP_FACTORY,
+    baseScore: 5,
+  });
+  ctx.addBinding({
+    id: 'coinbase',
+    query: withOneOf(COIN_SOURCE, 'coinbase', 10).build(),
+    tap: COINBASE_TAP_FACTORY,
+    baseScore: 5,
+  });
+  ctx.addBinding({
+    id: 'binance',
+    query: withOneOf(COIN_SOURCE, 'binance', 10).build(),
+    tap: BINANCE_TAP_FACTORY,
     baseScore: 5,
   });
 }
@@ -82,6 +94,8 @@ export default function CoinColumn(props: {
           Source{' '}
           <select value={source ?? 'mock'} onChange={(event) => sourceTap.set(event.target.value as CoinSource)}>
             <option value="mock">MockCoin</option>
+            <option value="coinbase">Coinbase</option>
+            <option value="binance">Binance</option>
           </select>
         </label>
         <label>
