@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Highlight, themes } from 'prism-react-renderer';
 import clock from './ClockCounterPanel.tsx?raw';
 import timeClock from './TimeClock.tsx?raw';
 import description from './DescriptionEditor.tsx?raw';
@@ -32,11 +33,23 @@ const examples = {
 
 function SourceColumn({ title, files }: { title: string; files: SourceFile[] }) {
   const [index, setIndex] = useState(0);
+  const source = files[index];
   return <section className="source-column">
     <label>{title}<select aria-label={`${title} source file`} value={index} onChange={event => setIndex(Number(event.target.value))}>
       {files.map((source, position) => <option key={source.name} value={position}>{source.name}</option>)}
     </select></label>
-    <pre><code>{files[index].text}</code></pre>
+    <Highlight code={source.text} language={source.name.endsWith('.tsx') ? 'tsx' : 'typescript'} theme={themes.vsDark}>
+      {({ className, style, tokens, getLineProps, getTokenProps }) => (
+        <pre className={className} style={style} aria-label={`${source.name} source code`}><code>
+          {tokens.map((line, lineIndex) => (
+            <span key={lineIndex} {...getLineProps({ line })}>
+              {line.map((token, tokenIndex) => <span key={tokenIndex} {...getTokenProps({ token })} />)}
+              {lineIndex < tokens.length - 1 ? '\n' : null}
+            </span>
+          ))}
+        </code></pre>
+      )}
+    </Highlight>
   </section>;
 }
 

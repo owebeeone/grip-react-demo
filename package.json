@@ -12,13 +12,14 @@
   },
   "dependencies": {
     "@owebeeone/grip-react": "file:../grip-react",
+    "prism-react-renderer": "2.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-resizable-panels": "^3.0.4"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.0.1",
     "@eslint/js": "^9.32.0",
+    "@testing-library/react": "^16.0.1",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.7.0",

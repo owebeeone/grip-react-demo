@@ -45,6 +45,29 @@ pnpm dev
 
 The application will be available at `http://localhost:5173` (or the next available port).
 
+### README introduction
+
+Open `/readme-counter.html` for the small, standalone counter in the GRIP React
+README's quick start. Its complete entry point is `src/readme/counter.tsx`.
+
+Open `/readme-weather.html` on the same server for the small example used in the
+GRIP React README. It has two independent weather columns and a provider selector.
+Both providers use deterministic fixtures: choosing **Coordinates (fixture)**
+introduces a geocoder dependency without changing the columns or calling a service.
+The full Weather tab at `/` retains the live Open-Meteo example.
+
+The complete introduction is in `src/readme/`. Its checks in
+`tests/readmeWeather.test.tsx` exercise independent edits, provider switching,
+transitive resolution, and isolated display and producer tests. After editing
+the introduction or its README excerpts, check their alignment from this checkout:
+
+```sh
+node scripts/check-readme.mjs
+```
+
+That check reads the README in the sibling `grip-react` checkout. All three HTML
+entry points are included in `pnpm build`.
+
 ### Build
 
 ```bash
