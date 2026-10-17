@@ -1,30 +1,20 @@
-import { useGrip, useRuntime, useAtomValueTap } from '@owebeeone/grip-react';
-import { WEATHER_LOCATION, WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, WEATHER_LOCATION_TAP, GEO_LABEL } from './grips.weather';
+import { useGrip } from '@owebeeone/grip-react';
+import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, GEO_LABEL } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
-import { useMemo } from 'react';
 
-export default function WeatherColumn(props: { title: string; initialLocation: string }) {
-	const { context: parentCtx } = useRuntime();
-	const ctx = useMemo(() => parentCtx.getGripConsumerContext().createChild(), [parentCtx]);
-
-	useAtomValueTap(WEATHER_LOCATION, {
-		ctx,
-		initial: props.initialLocation,
-		tapGrip: WEATHER_LOCATION_TAP,
-	});
-
-	const temp = useGrip(WEATHER_TEMP_C, ctx);
-	const humidity = useGrip(WEATHER_HUMIDITY, ctx);
-	const wind = useGrip(WEATHER_WIND_SPEED, ctx);
-	const dir = useGrip(WEATHER_WIND_DIR, ctx);
-	const rain = useGrip(WEATHER_RAIN_PCT, ctx);
-	const sunny = useGrip(WEATHER_SUNNY_PCT, ctx);
-	const uv = useGrip(WEATHER_UV_INDEX, ctx);
-	const weatherGeoLocation = useGrip(GEO_LABEL, ctx);
+export default function WeatherColumn(props: { title: string }) {
+	const temp = useGrip(WEATHER_TEMP_C);
+	const humidity = useGrip(WEATHER_HUMIDITY);
+	const wind = useGrip(WEATHER_WIND_SPEED);
+	const dir = useGrip(WEATHER_WIND_DIR);
+	const rain = useGrip(WEATHER_RAIN_PCT);
+	const sunny = useGrip(WEATHER_SUNNY_PCT);
+	const uv = useGrip(WEATHER_UV_INDEX);
+	const weatherGeoLocation = useGrip(GEO_LABEL);
 
 	return (
 		<div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12 }}>
-			<WeatherLocationSelect title={props.title} ctx={ctx} />
+			<WeatherLocationSelect title={props.title} />
 			        
 			<div style={{ marginBottom: 8, color: 'gray' }}>
 				Location: <strong>{weatherGeoLocation}</strong>

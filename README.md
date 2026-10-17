@@ -7,29 +7,40 @@ This demo demonstrates reactive data flows, async state management, and context-
 ## Features
 
 - **Calculator** - Demonstrates function taps with state management
+- **Counter & Clock** - Edit the buffered numeric counter or use its buttons;
+  the independent clock view reacts to the same GRIP value. Draft text and caret
+  are preserved while typing, including an unfinished negative value.
 - **Weather Integration** - Shows async taps with OpenMeteo API integration
 - **Time Clock** - Simple atom tap example
-- **Context Scoping** - Demonstrates hierarchical context resolution
+- **Live Text Editing** - The Clock & Counter page uses `GripInput` to preserve
+  a focused edit and caret while publishing an uppercase stored value on every
+  keystroke. A FunctionTap derives a slug and text statistics from that value.
+- **Context Scoping** - Weather and coin columns use `GripScope` for independent
+  values and mutators. Their keys identify columns, while cities and coin products
+  are mutable data inside those scopes.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+ 
-- npm or yarn
+- Node.js 24 (used for verification)
+- pnpm
+- Sibling `grip-core` and `grip-react` checkouts, built before installing this demo
 
 ### Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
-This will install `@owebeeone/grip-react` from npm (version 0.2.0 or higher).
+The current checkout uses `file:../grip-react`, which also depends on the sibling
+core checkout. It requires the local React package that exports `GripScope`.
+It does not currently install the published React release from npm.
 
 ### Development
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The application will be available at `http://localhost:5173` (or the next available port).
@@ -37,13 +48,13 @@ The application will be available at `http://localhost:5173` (or the next availa
 ### Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ### Preview Production Build
 
 ```bash
-npm run preview
+pnpm preview
 ```
 
 ## Project Structure
@@ -55,6 +66,20 @@ npm run preview
 - `src/openmeteo_taps.ts` - Async weather data taps
 - `src/runtime.ts` - GRIP runtime setup
 - `src/App.tsx` - Main application component
+- `src/WeatherPanel.tsx` - Weather scopes, each initialized with a location atom
+- `src/WeatherColumn.tsx` - Display and location controls using inherited grips
+- `src/CoinPanel.tsx` and `src/coinScope.ts` - Coin scope initialization and matchers
+
+## Scope checks
+
+```bash
+pnpm test
+```
+
+The local tests use deterministic weather data and mock coin streams. They check
+independent column edits, inherited mutators, and preservation of edited values
+when parents rerender. Scope initializers configure a new live context only;
+later changes go through the column's mutators.
 
 ## Key Concepts Demonstrated
 
@@ -75,7 +100,8 @@ Demonstrates how data resolution works through the context graph.
 - **Weather Tap Implementation**: See `WEATHER_TAP.md` for detailed explanation of the weather async tap
 - **Setup Guide**: See `SETTING_UP_THIS.md` for local development setup (using `npm link`) and architecture details
 
-> **Note**: This demo uses the published `@owebeeone/grip-react` package from npm. For local development of both packages together, see `SETTING_UP_THIS.md`.
+> The setup guide includes historical npm-link instructions. This checkout uses
+> the sibling file dependency described above.
 
 ## Related Packages
 

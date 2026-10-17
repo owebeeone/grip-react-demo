@@ -1,6 +1,9 @@
 # SETTING\_UP\_THIS — `@owebeeone/grip-react` and Demo App
 
-> **Note**: This demo now uses the published `@owebeeone/grip-react` package from npm (version 0.2.0+) by default. Simply run `npm install` to get started.
+> **Current checkout**: The demo uses `file:../grip-react`, including its new
+> `GripScope` export. Build the sibling core and React packages before installing
+> this demo. See [the README](README.md) for current commands. The walkthrough
+> below records the earlier npm-link setup and is not required for this checkout.
 >
 > **This guide is for local development** when you want to work on both `grip-react` and `grip-react-demo` together using `npm link` for hot-reloading during development.
 

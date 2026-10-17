@@ -1,14 +1,14 @@
 // App.tsx (demo)
-import { useGrip, useChildContext, GripGraphVisualizer, useRuntime, GraphDumpButton } from '@owebeeone/grip-react';
-import { PAGE_SIZE, DESCRIPTION, COUNT, COUNT_TAP, CALC_DIGIT_PRESSED, CALC_ADD_PRESSED, CALC_SUB_PRESSED, CALC_MUL_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_CLEAR_PRESSED } from './grips';
+import { useGrip, GripGraphVisualizer, useRuntime, GraphDumpButton } from '@owebeeone/grip-react';
+import { CALC_DIGIT_PRESSED, CALC_ADD_PRESSED, CALC_SUB_PRESSED, CALC_MUL_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_CLEAR_PRESSED } from './grips';
 import { CURRENT_TAB } from './grips';
-import TimeClock from './TimeClock';
 import { CALC_DISPLAY } from './grips';
 import TabBar from './TabBar';
 import AppHeader from './AppHeader';
 import WeatherPanel from './WeatherPanel';
 import CoinPanel from './CoinPanel';
-import React, { useState, useEffect } from 'react';
+import ClockCounterPanel from './ClockCounterPanel';
+import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function ResizableGraphWrapper(props: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ function ResizableGraphWrapper(props: { children: React.ReactNode }) {
   );
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ height: 'calc(100dvh - 4rem)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <div style={{ flex: '1 1 auto', display: 'flex', minHeight: 0, minWidth: 0 }}>
         {!open ? (
           mainPanel
@@ -61,16 +61,6 @@ function ResizableGraphWrapper(props: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const pageSize = useGrip(PAGE_SIZE);        // 50 (root override)
-
-  // Child context: override DESCRIPTION locally (row-like)
-  const rowCtx = useChildContext();
-  const desc = useGrip(DESCRIPTION, rowCtx);
-  const count = useGrip(COUNT); // produced by CounterTap
-  const countTap = useGrip(COUNT_TAP);
-
-  console.log('App', pageSize, count, desc);
-
   const calcDisplay = useGrip(CALC_DISPLAY);
   
   const tab = useGrip(CURRENT_TAB); // 'clock' | 'calc'
@@ -83,43 +73,12 @@ export default function App() {
   const calcEqualsPressed = useGrip(CALC_EQUALS_PRESSED);
   const calcClearPressed = useGrip(CALC_CLEAR_PRESSED);
 
-  useEffect(() => {
-    countTap?.set(1);
-  }, [countTap]);
-
-  const inc = (c: number) => {
-    if (c === undefined) {
-      return 1;
-    }
-    return c + 1;
-  };
-  const dec = (c: number) => {
-    if (c === undefined) {
-      return 0;
-    }
-    return c - 1;
-  };
-
-
   const mainContent = (
     <div style={{ padding: 16 }}>
       <AppHeader />
       <TabBar />
 
-      {tab === 'clock' && (
-        <div>
-          {!(count! & 1) ? <TimeClock /> : <div>Count is odd - no time</div>}
-          <div>Page size: {pageSize}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Use setvalue API */}
-            <button onClick={() => countTap?.update(dec)}>-</button>
-            <div>Count: {count}</div>
-            {/* Use atomic api to increment as an example. */}
-            <button onClick={() => countTap?.update(inc)}>+</button>
-          </div>
-          <div>Description: {desc}</div>
-        </div>
-      )}
+      {tab === 'clock' && <ClockCounterPanel />}
 
       {tab === 'calc' && (
         <div>

@@ -3,9 +3,8 @@ import { CURRENT_TIME } from './grips';
 import { memo } from 'react';
 
 function TimeClockInner() {
-  const now = useGrip(CURRENT_TIME) as Date;
-  //console.log('TimeClock', now.toLocaleTimeString());
-  return <div>Time: {now.toLocaleTimeString()}</div>;
+  const now = useGrip(CURRENT_TIME);
+  return <time aria-label="Current time" dateTime={now?.toISOString()}>{now?.toLocaleTimeString() ?? '—'}</time>;
 }
 
 const TimeClock = memo(TimeClockInner);

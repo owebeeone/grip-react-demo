@@ -1,11 +1,4 @@
-import {
-  useAtomValueTap,
-  useGrip,
-  useKeyedMatchingContext,
-  withOneOf,
-  type MatchingContext,
-} from '@owebeeone/grip-react';
-import { BINANCE_TAP_FACTORY, COINBASE_TAP_FACTORY, MOCK_COIN_TAP_FACTORY } from './cointaps';
+import { useGrip } from '@owebeeone/grip-react';
 import {
   COIN_EXCHANGE,
   COIN_PRICE_USD,
@@ -20,27 +13,6 @@ import {
 } from './grips.coin';
 
 const PRODUCTS = ['BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD'];
-
-function initCoinMatcher(ctx: MatchingContext): void {
-  ctx.addBinding({
-    id: 'mock-coin',
-    query: withOneOf(COIN_SOURCE, 'mock', 10).build(),
-    tap: MOCK_COIN_TAP_FACTORY,
-    baseScore: 5,
-  });
-  ctx.addBinding({
-    id: 'coinbase',
-    query: withOneOf(COIN_SOURCE, 'coinbase', 10).build(),
-    tap: COINBASE_TAP_FACTORY,
-    baseScore: 5,
-  });
-  ctx.addBinding({
-    id: 'binance',
-    query: withOneOf(COIN_SOURCE, 'binance', 10).build(),
-    tap: BINANCE_TAP_FACTORY,
-    baseScore: 5,
-  });
-}
 
 function formatPrice(value: number | undefined): string {
   if (value == null) return '-';
@@ -60,31 +32,16 @@ function formatTime(value: Date | undefined): string {
   return value ? value.toLocaleTimeString() : '-';
 }
 
-export default function CoinColumn(props: {
-  columnId: string;
-  title: string;
-  initialProduct: string;
-}) {
-  const ctx = useKeyedMatchingContext(`coin:${props.columnId}`, { init: initCoinMatcher });
-
-  const sourceTap = useAtomValueTap(COIN_SOURCE, {
-    ctx,
-    initial: 'mock' satisfies CoinSource,
-    tapGrip: COIN_SOURCE_TAP,
-  });
-  const productTap = useAtomValueTap(COIN_PRODUCT, {
-    ctx,
-    initial: props.initialProduct,
-    tapGrip: COIN_PRODUCT_TAP,
-  });
-
-  const source = useGrip(COIN_SOURCE, ctx);
-  const product = useGrip(COIN_PRODUCT, ctx);
-  const price = useGrip(COIN_PRICE_USD, ctx);
-  const volume = useGrip(COIN_VOLUME, ctx);
-  const exchange = useGrip(COIN_EXCHANGE, ctx);
-  const status = useGrip(COIN_STATUS, ctx);
-  const updatedAt = useGrip(COIN_UPDATED_AT, ctx);
+export default function CoinColumn(props: { title: string }) {
+  const sourceTap = useGrip(COIN_SOURCE_TAP);
+  const productTap = useGrip(COIN_PRODUCT_TAP);
+  const source = useGrip(COIN_SOURCE);
+  const product = useGrip(COIN_PRODUCT);
+  const price = useGrip(COIN_PRICE_USD);
+  const volume = useGrip(COIN_VOLUME);
+  const exchange = useGrip(COIN_EXCHANGE);
+  const status = useGrip(COIN_STATUS);
+  const updatedAt = useGrip(COIN_UPDATED_AT);
 
   return (
     <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12 }}>
@@ -92,7 +49,7 @@ export default function CoinColumn(props: {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <label>
           Source{' '}
-          <select value={source ?? 'mock'} onChange={(event) => sourceTap.set(event.target.value as CoinSource)}>
+          <select value={source ?? 'mock'} onChange={(event) => sourceTap?.set(event.target.value as CoinSource)}>
             <option value="mock">MockCoin</option>
             <option value="coinbase">Coinbase</option>
             <option value="binance">Binance</option>
@@ -100,7 +57,7 @@ export default function CoinColumn(props: {
         </label>
         <label>
           Product{' '}
-          <select value={product ?? props.initialProduct} onChange={(event) => productTap.set(event.target.value)}>
+          <select value={product ?? ''} onChange={(event) => productTap?.set(event.target.value)}>
             {PRODUCTS.map((item) => (
               <option key={item} value={item}>
                 {item}

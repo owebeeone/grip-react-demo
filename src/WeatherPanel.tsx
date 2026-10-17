@@ -1,5 +1,6 @@
-import { useGrip } from '@owebeeone/grip-react';
+import { GripScope, createAtomValueTap, useGrip } from '@owebeeone/grip-react';
 import { WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_NAME_TAP } from './grips';
+import { WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips.weather';
 import WeatherColumn from './WeatherColumn';
 import './App.css';
 
@@ -18,6 +19,7 @@ export default function WeatherPanel() {
           <button
             onClick={() => weatherProviderTap?.set('meteo')}
             className={`weather-provider-button ${weatherProvider === 'meteo' ? 'selected' : ''}`}
+            aria-pressed={weatherProvider === 'meteo'}
             disabled={weatherProvider === 'meteo'}
           >
             Meteo
@@ -25,6 +27,7 @@ export default function WeatherPanel() {
           <button
             onClick={() => weatherProviderTap?.set('mock')}
             className={`weather-provider-button ${weatherProvider === 'mock' ? 'selected' : ''}`}
+            aria-pressed={weatherProvider === 'mock'}
             disabled={weatherProvider === 'mock'}
           >
             Mock
@@ -32,8 +35,20 @@ export default function WeatherPanel() {
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-        <WeatherColumn title="Location A" initialLocation="Sydney" />
-        <WeatherColumn title="Location B" initialLocation="San Jose" />
+        <GripScope scopeKey="weather-column:left" init={ctx =>
+          ctx.getGripHomeContext().registerTap(createAtomValueTap(WEATHER_LOCATION, {
+            initial: 'Sydney', handleGrip: WEATHER_LOCATION_TAP,
+          }))
+        }>
+          <WeatherColumn title="Location A" />
+        </GripScope>
+        <GripScope scopeKey="weather-column:right" init={ctx =>
+          ctx.getGripHomeContext().registerTap(createAtomValueTap(WEATHER_LOCATION, {
+            initial: 'San Jose', handleGrip: WEATHER_LOCATION_TAP,
+          }))
+        }>
+          <WeatherColumn title="Location B" />
+        </GripScope>
       </div>
     </div>
   );
