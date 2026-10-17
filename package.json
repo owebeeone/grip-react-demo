@@ -8,10 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:pages": "npm run build -- --base=/grip-react-demo/"
   },
   "dependencies": {
-    "@owebeeone/grip-react": "file:../grip-react",
+    "@owebeeone/grip-react": "0.3.0",
     "prism-react-renderer": "2.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

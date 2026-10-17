@@ -25,7 +25,7 @@ This demo demonstrates reactive data flows, async state management, and context-
 
 - Node.js 24 (used for verification)
 - pnpm
-- Sibling `grip-core` and `grip-react` checkouts, built before installing this demo
+- Published `@owebeeone/grip-react` 0.3.0 (installed from the lockfile)
 
 ### Installation
 
@@ -33,9 +33,8 @@ This demo demonstrates reactive data flows, async state management, and context-
 pnpm install
 ```
 
-The current checkout uses `file:../grip-react`, which also depends on the sibling
-core checkout. It requires the local React package that exports `GripScope`.
-It does not currently install the published React release from npm.
+This demo installs the published React adapter and Core dependencies. No sibling
+source checkout is needed to build or deploy it.
 
 ### Development
 
@@ -65,8 +64,9 @@ the introduction or its README excerpts, check their alignment from this checkou
 node scripts/check-readme.mjs
 ```
 
-That check reads the README in the sibling `grip-react` checkout. All three HTML
-entry points are included in `pnpm build`.
+That optional documentation check reads the README in a sibling `grip-react`
+checkout. Hosting does not need that checkout. All three HTML entry points are
+included in `pnpm build`.
 
 ### Build
 
@@ -133,8 +133,8 @@ Demonstrates how data resolution works through the context graph.
 - **Weather Tap Implementation**: See `WEATHER_TAP.md` for detailed explanation of the weather async tap
 - **Setup Guide**: See `SETTING_UP_THIS.md` for local development setup (using `npm link`) and architecture details
 
-> The setup guide includes historical npm-link instructions. This checkout uses
-> the sibling file dependency described above.
+> The setup guide includes historical npm-link instructions. This checkout now
+> consumes the published adapter from npm.
 
 ## Related Packages
 
@@ -145,3 +145,25 @@ Demonstrates how data resolution works through the context graph.
 ## License
 
 MIT
+
+## GitHub Pages
+
+[Open the live demo](https://owebeeone.github.io/grip-react-demo/) · [Counter](https://owebeeone.github.io/grip-react-demo/readme-counter.html) · [Offline weather introduction](https://owebeeone.github.io/grip-react-demo/readme-weather.html)
+
+The Pages workflow installs locked, published dependencies, runs the tests, and
+builds all three entry points under the repository's URL prefix. Pushes to
+`main` deploy automatically; pull requests build and test without deploying.
+Manual deployments are available through the workflow's **Run workflow** action.
+
+To inspect the same output locally:
+
+```sh
+npm run build:pages
+npm run preview -- --base=/grip-react-demo/
+```
+
+Open `/grip-react-demo/` on the preview server. Ordinary `npm run dev` and
+`npm run build` keep the root URL for local development. GitHub Pages hosts the
+static application; live weather and exchange data are requested directly by
+the browser and depend on those services' availability. The offline README
+weather example does not need external services.
