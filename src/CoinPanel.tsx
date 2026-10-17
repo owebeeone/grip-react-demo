@@ -5,7 +5,7 @@ import { initCoinColumn } from './coinScope';
 export default function CoinPanel() {
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="example-columns">
         <GripScope scopeKey="coin-column:left" init={ctx => initCoinColumn(ctx, 'BTC-USD')}>
           <CoinColumn title="Market A" />
         </GripScope>

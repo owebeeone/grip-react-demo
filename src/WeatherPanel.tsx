@@ -34,7 +34,7 @@ export default function WeatherPanel() {
           </button>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+      <div className="example-columns">
         <GripScope scopeKey="weather-column:left" init={ctx =>
           ctx.getGripHomeContext().registerTap(createAtomValueTap(WEATHER_LOCATION, {
             initial: 'Sydney', handleGrip: WEATHER_LOCATION_TAP,

@@ -72,6 +72,16 @@ pnpm preview
 
 ## Scope checks
 
+**Show Graph** opens a resizable workspace with the live demo and its graph side
+by side. Change the demo and watch its graph values update. Drag the divider to
+allocate space; use **Fit graph** for an overview or turn it off to read at the
+natural size. Context levels run top to bottom, with siblings arranged side by side.
+Opening the inspector keeps the running example mounted.
+
+**View Code** shows the selected tab's UI and scope/provider code side by side.
+These are raw imports of the actual source files, so they stay aligned with the
+running demo.
+
 ```bash
 pnpm test
 ```
