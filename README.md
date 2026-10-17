@@ -1,5 +1,7 @@
 # grip-react-demo
 
+[Open the live demo on GitHub Pages](https://owebeeone.github.io/grip-react-demo/)
+
 A React + TypeScript demo application showcasing GRIP (Generalized Retrieval Intent Provisioning) using `@owebeeone/grip-react`.
 
 This demo demonstrates reactive data flows, async state management, and context-aware data resolution through React hooks. It includes examples of atom taps, function taps, and async taps with real-world use cases.
