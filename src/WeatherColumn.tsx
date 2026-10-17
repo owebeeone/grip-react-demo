@@ -2,6 +2,11 @@ import { useGrip } from '@owebeeone/grip-react';
 import { WEATHER_TEMP_C, WEATHER_HUMIDITY, WEATHER_WIND_SPEED, WEATHER_WIND_DIR, WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX, GEO_LABEL } from './grips.weather';
 import WeatherLocationSelect from './WeatherLocationSelect';
 
+/**
+ * Ask for weather values, without knowing which provider supplies them.
+ * GRIP resolves these grips in this column's context and subscribes to updates.
+ * The city, API calls, and geocoding chain are configured outside this display.
+ */
 export default function WeatherColumn(props: { title: string }) {
 	const temp = useGrip(WEATHER_TEMP_C);
 	const humidity = useGrip(WEATHER_HUMIDITY);

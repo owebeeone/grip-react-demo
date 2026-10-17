@@ -8,6 +8,8 @@ export function initCoinColumn(ctx: MatchingContext, initialProduct: string): vo
   home.registerTap(createAtomValueTap(COIN_SOURCE, { initial: 'mock', handleGrip: COIN_SOURCE_TAP }));
   home.registerTap(createAtomValueTap(COIN_PRODUCT, { initial: initialProduct, handleGrip: COIN_PRODUCT_TAP }));
 
+  // Declare which producer matches each source value. GRIP changes the winning
+  // producer when that value changes; CoinColumn keeps reading the same grips.
   ctx.addBinding({
     id: 'mock-coin',
     query: withOneOf(COIN_SOURCE, 'mock', 10).build(),

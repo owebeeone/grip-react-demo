@@ -3,6 +3,7 @@ import CoinColumn from './CoinColumn';
 import { initCoinColumn } from './coinScope';
 
 export default function CoinPanel() {
+  // Same UI, independent scopes. Products are mutable data, not scope identity.
   return (
     <div>
       <div className="example-columns">

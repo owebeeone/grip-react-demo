@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import clock from './ClockCounterPanel.tsx?raw';
+import timeClock from './TimeClock.tsx?raw';
 import description from './DescriptionEditor.tsx?raw';
 import descriptionScope from './descriptionScope.ts?raw';
 import calculator from './CalculatorPanel.tsx?raw';
 import calculatorTap from './taps_calculator.ts?raw';
 import weather from './WeatherColumn.tsx?raw';
+import weatherSelect from './WeatherLocationSelect.tsx?raw';
 import weatherPanel from './WeatherPanel.tsx?raw';
 import meteo from './openmeteo_taps.ts?raw';
 import coin from './CoinColumn.tsx?raw';
@@ -20,11 +22,11 @@ type SourceFile = { name: string; text: string };
 const file = (name: string, text: string): SourceFile => ({ name, text });
 const examples = {
   clock: {
-    title: 'Clock & Counter', ui: [file('ClockCounterPanel.tsx', clock), file('DescriptionEditor.tsx', description)],
+    title: 'Clock & Counter', ui: [file('ClockCounterPanel.tsx', clock), file('DescriptionEditor.tsx', description), file('TimeClock.tsx', timeClock)],
     providers: [file('descriptionScope.ts', descriptionScope), file('grips.ts', grips), file('taps.ts', taps)],
   },
   calc: { title: 'Calculator', ui: [file('CalculatorPanel.tsx', calculator)], providers: [file('taps_calculator.ts', calculatorTap), file('grips.ts', grips)] },
-  weather: { title: 'Weather', ui: [file('WeatherColumn.tsx', weather)], providers: [file('WeatherPanel.tsx', weatherPanel), file('openmeteo_taps.ts', meteo), file('grips.weather.ts', weatherGrips)] },
+  weather: { title: 'Weather', ui: [file('WeatherColumn.tsx', weather), file('WeatherLocationSelect.tsx', weatherSelect)], providers: [file('WeatherPanel.tsx', weatherPanel), file('openmeteo_taps.ts', meteo), file('grips.weather.ts', weatherGrips)] },
   coins: { title: 'Coins', ui: [file('CoinColumn.tsx', coin)], providers: [file('CoinPanel.tsx', coinPanel), file('coinScope.ts', coinScope), file('cointaps.ts', coinTaps), file('grips.coin.ts', coinGrips)] },
 };
 

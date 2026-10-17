@@ -32,6 +32,11 @@ function formatTime(value: Date | undefined): string {
   return value ? value.toLocaleTimeString() : '-';
 }
 
+/**
+ * Read data and mutators from the enclosing column scope. The exchange
+ * connections and product-specific streams belong to providers, so changing
+ * the source does not change this display's subscriptions to its grips.
+ */
 export default function CoinColumn(props: { title: string }) {
   const sourceTap = useGrip(COIN_SOURCE_TAP);
   const productTap = useGrip(COIN_PRODUCT_TAP);

@@ -236,6 +236,8 @@ async function* binanceTickerStream(product: string, signal: AbortSignal): Async
 }
 
 export function createMockCoinTap(): Tap {
+  // Destination parameters select the product for each consumer. Stream startup,
+  // updates, and cancellation are handled here and by the shared tap machinery.
   return createAsyncStreamMultiTap<CoinOuts, CoinTick>({
     provides: COIN_TICK_OUTPUTS,
     destinationParamGrips: [COIN_PRODUCT],

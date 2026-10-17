@@ -4,8 +4,14 @@ import { WEATHER_LOCATION, WEATHER_LOCATION_TAP } from './grips.weather';
 import WeatherColumn from './WeatherColumn';
 import './App.css';
 
+/**
+ * Composition owns the columns' contexts; WeatherColumn only consumes them.
+ * Scope keys identify columns, not cities. Each init seeds a new live scope
+ * once; selecting another city later updates its atom without replacing it.
+ */
 export default function WeatherPanel() {
   const weatherProvider = useGrip(WEATHER_PROVIDER_NAME);
+  // Buttons update this grip; bindings in taps.ts select mock or live weather.
   const weatherProviderTap = useGrip(WEATHER_PROVIDER_NAME_TAP);
 
   return (

@@ -2,6 +2,8 @@ import { useId } from 'react';
 import { GripInput, useGrip } from '@owebeeone/grip-react';
 import { DESCRIPTION, DESCRIPTION_SLUG, DESCRIPTION_STATS, DESCRIPTION_TAP } from './grips';
 
+// This UI requests the stored value and computed outputs. Their derivation
+// lives in descriptionScope.ts; this component does not calculate the results.
 export default function DescriptionEditor() {
   const id = useId();
   const stored = useGrip(DESCRIPTION);
@@ -11,6 +13,8 @@ export default function DescriptionEditor() {
     <section className="demo-card description-example" aria-labelledby={`${id}-heading`}>
       <h3 id={`${id}-heading`}>Text & derived values</h3>
       <label htmlFor={id}>Description</label>
+      {/* GRIP receives uppercase values immediately. The focused edit buffer
+          preserves what the user typed instead of replacing it on each echo. */}
       <GripInput
         id={id}
         grip={DESCRIPTION}

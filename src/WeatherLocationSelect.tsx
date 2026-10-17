@@ -35,6 +35,8 @@ const OPTIONS = [
   'Port Augusta'] as const;
 
 export default function WeatherLocationSelect(props: { title: string }) {
+  // The value and its mutator come from the same enclosing column scope.
+  // This control needs no column ID and does not choose a weather provider.
   const bind = useSelectGrip(WEATHER_LOCATION, WEATHER_LOCATION_TAP);
 
   return (

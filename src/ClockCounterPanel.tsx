@@ -11,12 +11,15 @@ function parseCount(text: string): number | undefined {
 }
 
 function CounterCard() {
+  // Mutation is a context-provided capability, not local React counter state.
   const handle = useGrip(COUNT_TAP);
   return (
     <section className="demo-card counter-card" aria-label="Counter">
       <h3>Counter</h3>
       <div className="counter-controls">
         <button type="button" aria-label="Decrement count" onClick={() => handle?.update(value => value - 1)}>−</button>
+        {/* Publish valid numbers while preserving the focused draft and caret,
+            including unfinished input such as an empty field or just "-". */}
         <GripInput
           aria-label="Count"
           className="counter-value"
@@ -36,6 +39,8 @@ function CounterCard() {
 }
 
 function ClockCard() {
+  // Independently consume the same count. No counter props or callbacks are
+  // needed: GRIP delivers changes, and React renders this visibility choice.
   const count = useGrip(COUNT);
   const visible = count != null && count % 2 === 0;
   return (

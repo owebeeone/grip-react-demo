@@ -22,6 +22,8 @@ function nearestHourIndex(hourlyTimes: string[], currentIso: string): number {
   return best;
 }
 
+// The location comes from each consumer's destination context, so the same
+// provider can geocode different columns without importing or calling their UI.
 export function createLocationToGeoTap(): Tap {
   type Outs = { Lat: typeof GEO_LAT; Lng: typeof GEO_LNG; Label: typeof GEO_LABEL };
   return createAsyncMultiTap<Outs, { lat?: number; lng?: number; label?: string }>({
@@ -59,6 +61,8 @@ export const PROVIDES = [
   WEATHER_RAIN_PCT, WEATHER_SUNNY_PCT, WEATHER_UV_INDEX
 ];
 
+// This producer asks for coordinates. The separate geocoder supplies them from
+// the consumer's location: GRIP resolves that chain without UI coordination.
 // @ts-ignore
 export function createOpenMeteoWeatherTap(): Tap {
   type Outs = {

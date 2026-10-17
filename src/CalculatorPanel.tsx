@@ -4,6 +4,8 @@ import {
   CALC_MUL_PRESSED, CALC_DIV_PRESSED, CALC_EQUALS_PRESSED, CALC_CLEAR_PRESSED,
 } from './grips';
 
+// Display and actions are contracts. CalculatorTap owns the calculation state
+// and rules; this UI neither constructs that producer nor imports its class.
 export default function CalculatorPanel() {
   const display = useGrip(CALC_DISPLAY);
   const digit = useGrip(CALC_DIGIT_PRESSED);
