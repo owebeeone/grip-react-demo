@@ -1,5 +1,6 @@
 #root {
-  max-width: 1280px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
@@ -80,9 +81,9 @@
 .graph-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-width: 0; text-align: left; }
 .example-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 
-@container (max-width: 500px) {
-  .clock-overview, .example-columns { grid-template-columns: minmax(0, 1fr); }
-  .description-example dl { grid-template-columns: minmax(0, 1fr); }
+@container (max-width: 600px) {
+  .demo-running-example .clock-overview, .demo-running-example .example-columns { grid-template-columns: minmax(0, 1fr); }
+  .demo-running-example .description-example dl { grid-template-columns: minmax(0, 1fr); }
 }
 
 .demo-tools, .inspector-toolbar {
@@ -183,7 +184,7 @@
 }
 
 .clock-counter-panel {
-  width: 680px;
+  width: 100%;
   max-width: 100%;
   display: grid;
   gap: 16px;
